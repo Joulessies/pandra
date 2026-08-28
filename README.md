@@ -1,1 +1,1 @@
-# Pandra Application
+# Pandra Widget Application
