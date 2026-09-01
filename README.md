@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Pandra Logo](assets/images/icon.png)
+<img src="assets/images/icon.png" alt="Pandra Logo" width="96" style="border-radius: 20px;" />
 
 ### **The unified modular command deck & telemetry studio for mobile, desktop, and native home screen widgets.**
 
