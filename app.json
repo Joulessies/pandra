@@ -1,18 +1,25 @@
 {
   "expo": {
     "name": "pandra",
-    "slug": "pandra",
+    "slug": "pandra-o7rzxlghqceu8bko7hoom",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pandra",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.joulessies.pandra",
+      "supportsTablet": true,
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.joulessies.pandra"
+        ]
+      }
     },
     "android": {
+      "package": "com.joulessies.pandra",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#92A498",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -28,15 +35,91 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#FAF8F5",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.joulessies.pandra",
+          "widgets": [
+            {
+              "name": "PandraWidget",
+              "displayName": "Pandra Telemetry",
+              "description": "Live metrics from your Pandra command deck",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "accessoryRectangular"
+              ]
+            }
+          ]
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "PandraSmallWidget",
+              "label": "Pandra Telemetry",
+              "description": "Live metrics from your Pandra command deck",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "none",
+              "widgetFeatures": "reconfigurable",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "PandraWideWidget",
+              "label": "Pandra Telemetry (Wide)",
+              "description": "Expanded live metrics from your Pandra command deck",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal",
+              "widgetFeatures": "reconfigurable",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ],
+      "./plugins/with-work-runtime-fix.js"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4ad070ca-1bb2-47ad-b8fe-d2519c743a34",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.joulessies.pandra.ExpoWidgetsTarget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.joulessies.pandra"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "owner": "joulessies"
   }
 }
