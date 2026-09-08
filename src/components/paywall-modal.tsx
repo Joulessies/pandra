@@ -485,7 +485,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
 
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => Linking.openURL('https:
+                onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text fontFamily={fonts.body} fontSize={11} color={pandraColors.textMuted}>

@@ -33,7 +33,7 @@ export async function geocodeCity(cityName: string): Promise<{ name: string; lat
   if (match) return match;
 
   try {
-    const url = `https:
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(clean)}&count=1`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
@@ -59,7 +59,7 @@ export async function fetchLiveWeatherData(
   unit: 'celsius' | 'fahrenheit' = 'celsius'
 ): Promise<WeatherWidgetConfig> {
   const tempUnitParam = unit === 'fahrenheit' ? '&temperature_unit=fahrenheit' : '';
-  const url = `https:
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto${tempUnitParam}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -113,22 +113,22 @@ export async function fetchLiveNewsData(
 ): Promise<NewsWidgetConfig> {
   try {
     if (source === 'hackernews') {
-      const topIdsRes = await fetch('https:
+      const topIdsRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
       const topIds = await topIdsRes.json();
       if (Array.isArray(topIds) && topIds.length > 0) {
-        const itemRes = await fetch(`https:
+        const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${topIds[0]}.json`);
         const item = await itemRes.json();
         return {
           source: 'hackernews',
           sourceLabel: 'Hacker News',
           headline: item?.title || 'Open source telemetry engine released',
-          url: item?.url || `https:
+          url: item?.url || `https://news.ycombinator.com/item?id=${topIds[0]}`,
           timeAgo: 'Top story',
           lastFetched: Date.now(),
         };
       }
     } else if (source === 'devto') {
-      const res = await fetch('https:
+      const res = await fetch('https://dev.to/api/articles?per_page=1&top=1');
       const articles = await res.json();
       if (Array.isArray(articles) && articles.length > 0) {
         const topArticle = articles[0];
@@ -146,7 +146,7 @@ export async function fetchLiveNewsData(
         source: 'ai',
         sourceLabel: 'AI Telemetry',
         headline: 'Open-weights reasoning models cross 90% benchmark on edge devices',
-        url: 'https:
+        url: 'https://arxiv.org',
         timeAgo: 'Trending',
         lastFetched: Date.now(),
       };
@@ -155,7 +155,7 @@ export async function fetchLiveNewsData(
         source: 'techcrunch',
         sourceLabel: 'Tech Radar',
         headline: 'Next-generation cloud architectures adopt Rust for serverless micro-runtimes',
-        url: 'https:
+        url: 'https://techcrunch.com',
         timeAgo: 'Live',
         lastFetched: Date.now(),
       };
@@ -168,7 +168,7 @@ export async function fetchLiveNewsData(
     source,
     sourceLabel: source === 'hackernews' ? 'Hacker News' : source === 'devto' ? 'Dev.to' : 'Tech Radar',
     headline: 'Modern developer toolchains report 40% latency reduction with edge telemetry',
-    url: 'https:
+    url: 'https://news.ycombinator.com',
     timeAgo: 'Just now',
     lastFetched: Date.now(),
   };
@@ -235,7 +235,7 @@ export async function fetchLiveBatteryData(): Promise<BatteryWidgetConfig> {
 export async function measureNetworkLatency(): Promise<{ latencyMs: number; rps: number }> {
   const start = performance.now();
   try {
-    await fetch('https:
+    await fetch('https://1.1.1.1/cdn-cgi/trace', {
       method: 'GET',
       cache: 'no-cache',
     });

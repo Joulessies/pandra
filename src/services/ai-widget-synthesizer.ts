@@ -158,13 +158,13 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
     }
     
     else if (lower.includes('photo') || lower.includes('image') || lower.includes('picture') || lower.includes('wallpaper') || lower.includes('cyberpunk') || lower.includes('tokyo')) {
-        let imgUrl = 'https:
+        let imgUrl = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=400&fit=crop';
         if (lower.includes('space') || lower.includes('galaxy')) {
-            imgUrl = 'https:
+            imgUrl = 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=400&h=400&fit=crop';
         } else if (lower.includes('circuit') || lower.includes('code') || lower.includes('neon')) {
-            imgUrl = 'https:
+            imgUrl = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=400&fit=crop';
         } else if (lower.includes('nature') || lower.includes('mountain')) {
-            imgUrl = 'https:
+            imgUrl = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop';
         }
 
         synthesized = {
@@ -190,7 +190,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
     else if (lower.includes('github') || lower.includes('repo') || lower.includes('stars')) {
         const repoMatch = query.match(/([a-zA-Z0-9_\-\.]+)\/([a-zA-Z0-9_\-\.]+)/);
         const repoPath = repoMatch ? `${repoMatch[1]}/${repoMatch[2]}` : 'expo/expo';
-        const endpoint = `https:
+        const endpoint = `https://api.github.com/repos/${repoPath}`;
 
         const apiRes = await fetchApiWidgetData({
             endpointUrl: endpoint,
@@ -231,10 +231,10 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
         const coinSubtitle = isSol ? 'SOL / USD Feed' : isEth ? 'ETH / USD Feed' : 'Coinbase USD Feed';
         const coinColor = isSol ? '#8B5CF6' : isEth ? '#6366F1' : '#F59E0B';
         const endpoint = isSol
-            ? 'https:
+            ? 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd'
             : isEth
-            ? 'https:
-            : 'https:
+            ? 'https://api.coinbase.com/v2/prices/ETH-USD/spot'
+            : 'https://api.coinbase.com/v2/prices/BTC-USD/spot';
         const jsonPath = isSol ? 'solana.usd' : isEth ? 'ethereum.usd' : 'data.amount';
 
         synthesized = {

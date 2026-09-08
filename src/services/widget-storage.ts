@@ -124,7 +124,7 @@ export const ONBOARDING_ROLES: Record<string, RolePreset> = {
         type: 'api_fetcher',
         sparklinePattern: 'volatile',
         apiConfig: {
-          endpointUrl: 'https:
+          endpointUrl: 'https://api.coinbase.com/v2/prices/BTC-USD/spot',
           jsonPath: 'data.amount',
           pollIntervalSec: 30,
           unit: 'USD',
@@ -264,7 +264,7 @@ export const ONBOARDING_ROLES: Record<string, RolePreset> = {
         type: 'api_fetcher',
         sparklinePattern: 'growth',
         apiConfig: {
-          endpointUrl: 'https:
+          endpointUrl: 'https://api.github.com/repos/expo/expo',
           jsonPath: 'stargazers_count',
           pollIntervalSec: 60,
           unit: '★',

@@ -67,10 +67,10 @@ interface CustomWidgetBuilderModalProps {
 type BuilderCategory = 'photo' | 'weather' | 'battery' | 'news' | 'note' | 'counter' | 'api' | 'static';
 
 const PRESET_WALLPAPERS = [
-  { label: 'Cyber Tokyo', url: 'https:
-  { label: 'Panda Minimal', url: 'https:
-  { label: 'Neon Circuit', url: 'https:
-  { label: 'Deep Space', url: 'https:
+  { label: 'Cyber Tokyo', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=400&fit=crop' },
+  { label: 'Panda Minimal', url: 'https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?w=400&h=400&fit=crop' },
+  { label: 'Neon Circuit', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=400&fit=crop' },
+  { label: 'Deep Space', url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=400&h=400&fit=crop' },
 ];
 
 const COLOR_OPTIONS = [

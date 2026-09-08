@@ -103,9 +103,9 @@ const SPARKLINE_PATTERNS: { id: SparklineStyle; label: string }[] = [
 ];
 
 const PHOTO_PRESETS = [
-    { name: 'Cyber Dark', url: 'https:
-    { name: 'Aurora Neon', url: 'https:
-    { name: 'Monochrome Matrix', url: 'https:
+    { name: 'Cyber Dark', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=400&fit=crop' },
+    { name: 'Aurora Neon', url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&h=400&fit=crop' },
+    { name: 'Monochrome Matrix', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=400&fit=crop' },
 ];
 
 export default function ExploreScreen() {
@@ -1419,7 +1419,7 @@ export default function ExploreScreen() {
                                             color={pandraColors.text}
                                             value={apiUrl}
                                             onChangeText={setApiUrl}
-                                            placeholder="https:
+                                            placeholder="https://api.example.com/v1/data"
                                             placeholderTextColor={pandraColors.textMuted as any}
                                         />
                                         <XStack gap={8}>

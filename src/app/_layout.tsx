@@ -34,17 +34,46 @@ LogBox.ignoreLogs([
 ]);
 
 if (Platform.OS === 'android') {
-  registerPandraWidgetHandler();
+  try {
+    registerPandraWidgetHandler();
+  } catch (err) {
+    console.warn('[Widgets] Android widget handler registration skipped:', err);
+  }
 }
 
 SplashScreen.preventAutoHideAsync();
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_placeholder_key_for_dev';
+const CLERK_DEFAULT_KEY = 'pk_test_ZGVhci1wdW1hLTY3ODAuY2xlcmsuYWNjb3VudHMuZGV2JA';
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || CLERK_DEFAULT_KEY;
 
-if (!process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-  console.warn(
-    '[Auth] Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in .env. Running in offline/fallback mode.'
-  );
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class SafeAppErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error('[Pandra] Caught fatal startup error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: pandraColors.bg, alignItems: 'center', justifyContent: 'center' }}>
+          <AnimatedSplashOverlay />
+        </View>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 function InitialLayout() {
@@ -59,10 +88,16 @@ function InitialLayout() {
 
     if (isAuthenticated && inAuthGroup) {
       router.replace('/');
-    } else if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/onboarding');
     }
   }, [isAuthenticated, isLoaded, segments, router]);
+
+  if (!isLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: pandraColors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <AnimatedSplashOverlay />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -75,8 +110,8 @@ function InitialLayout() {
           },
         }}
       >
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="explore" options={{ headerShown: false }} />
       </Stack>
     </>
@@ -95,22 +130,26 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded || error) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
     }
+    const safetyTimer = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    }, 1500);
+    return () => clearTimeout(safetyTimer);
   }, [loaded, error]);
 
   if (!loaded && !error) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: pandraColors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <AnimatedSplashOverlay />
       </View>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-        <ClerkLoaded>
+    <SafeAppErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: pandraColors.bg }}>
+        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
           <AppAuthProvider>
             <RevenueCatProvider>
               <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
@@ -120,8 +159,8 @@ export default function RootLayout() {
               </TamaguiProvider>
             </RevenueCatProvider>
           </AppAuthProvider>
-        </ClerkLoaded>
-      </ClerkProvider>
-    </GestureHandlerRootView>
+        </ClerkProvider>
+      </GestureHandlerRootView>
+    </SafeAppErrorBoundary>
   );
 }

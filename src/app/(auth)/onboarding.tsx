@@ -302,7 +302,7 @@ export default function OnboardingScreen() {
         setApiFetching(true);
         triggerAiMorph();
         try {
-            const res = await fetch('https:
+            const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
             if (res.ok) {
                 const data = await res.json();
                 const num = parseFloat(data.data.amount);

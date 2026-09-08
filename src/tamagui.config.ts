@@ -150,6 +150,10 @@ export const tamaguiConfig = createTamagui({
         ...configBase.themes,
         dark: {
             ...configBase.themes.dark,
+            background: pandraColors.bg,
+            color: pandraColors.text,
+            borderColor: pandraColors.border,
+            ...pandraColors,
         },
         light: {
             ...configBase.themes.light,

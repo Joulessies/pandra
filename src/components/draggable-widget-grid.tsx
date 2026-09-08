@@ -216,10 +216,14 @@ export function DraggableWidgetGrid({
     });
   }, [dragOpacity, dragScale, onReorder, onReorderWidgets, pan]);
 
-  const [panResponder, setPanResponder] = useState<PanResponderInstance | null>(null);
+  const handleEndDragRef = useRef(handleEndDrag);
+  handleEndDragRef.current = handleEndDrag;
 
-  useEffect(() => {
-    const pr = PanResponder.create({
+  const calculateTargetIndexRef = useRef(calculateTargetIndex);
+  calculateTargetIndexRef.current = calculateTargetIndex;
+
+  const panResponder = useMemo(() => {
+    return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) => {
         return Math.abs(gestureState.dx) > 4 || Math.abs(gestureState.dy) > 4;
@@ -253,7 +257,7 @@ export function DraggableWidgetGrid({
         const touchX = (evt.nativeEvent.pageX || 0) - origin.pageX;
         const touchY = (evt.nativeEvent.pageY || 0) - origin.pageY;
 
-        const target = calculateTargetIndex(touchX, touchY);
+        const target = calculateTargetIndexRef.current(touchX, touchY);
         if (target !== null) {
           setHoverTargetIndex(target);
         }
@@ -261,19 +265,17 @@ export function DraggableWidgetGrid({
       onPanResponderRelease: () => {
         const current = activeIndexRef.current;
         if (current !== null) {
-          handleEndDrag(current);
+          handleEndDragRef.current(current);
         }
       },
       onPanResponderTerminate: () => {
         const current = activeIndexRef.current;
         if (current !== null) {
-          handleEndDrag(current);
+          handleEndDragRef.current(current);
         }
       },
     });
-
-    setPanResponder(pr);
-  }, [calculateTargetIndex, dragOpacity, dragScale, handleEndDrag, pan]);
+  }, [dragOpacity, dragScale, pan]);
 
   const rows: GridRow[] = useMemo(() => {
     const list: GridRow[] = [];

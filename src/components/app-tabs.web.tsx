@@ -60,7 +60,7 @@ export function CustomTabList(props: TabListProps) {
 
         {props.children}
 
-        <ExternalLink href="https:
+        <ExternalLink href="https://docs.expo.dev">
           <Pressable style={styles.externalPressable}>
             <ThemedText type="link">Docs</ThemedText>
             <SymbolView

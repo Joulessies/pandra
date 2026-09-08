@@ -89,7 +89,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
     setSelectedTemplate(null);
     setTitle('Custom API');
     setSubtitle('Live REST feed');
-    setEndpointUrl('https:
+    setEndpointUrl('https://api.github.com/repos/expo/expo');
     setJsonPath('stargazers_count');
     setMetricLabel('Metric');
     setUnit('');

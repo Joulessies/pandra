@@ -23,11 +23,47 @@
 
 ---
 
+<div align="center">
+  <img src="assets/screenshots/feature-graphic-banner.jpg" alt="Pandra Promotional Feature Banner" width="100%" style="border-radius: 12px; margin: 12px 0;" />
+</div>
+
+---
+
 ## 🌟 Executive Summary
 
 Modern builders, developers, and data enthusiasts need live data at their fingertips — crypto prices, API health, weather, news, system vitals — but building widgets has always required native code and platform expertise.
 
 **Pandra** solves this as an **AI-powered widget maker**. Describe what you want in plain English, and Pandra instantly generates beautiful, production-ready widgets. It combines a drag-and-drop studio with **8+ plug-and-play widget engines**, **real-time REST API JSONPath query extractors**, **natural language AI widget generation**, **offline-first reactive cloud sync**, and **full native home screen widget parity (iOS WidgetKit + Android AppWidgets)**.
+
+---
+
+## 🔗 Try It Out
+
+| Platform | Link | Description |
+|:---|:---|:---|
+| 📱 **Android APK** | [**Download APK**](https://expo.dev/accounts/joulessies/projects/pandra-o7rzxlghqceu8bko7hoom/builds/43e3c58f-fc41-44b0-964c-293a3065cf51) | Install directly on any Android device — no Play Store needed |
+| 💻 **Source Code** | [**GitHub Repository**](https://github.com/Joulessies/pandra) | Full source code with MIT license |
+| 🖥 **Run Locally (Web)** | Clone repo → `npm install` → `npm run web` | Instant browser preview via Expo Web |
+
+---
+
+## 📱 App Store & Showcase Screenshots
+
+<div align="center">
+
+| 1. Command Deck Studio | 2. AI Prompt-to-Widget | 3. Native Home Screen | 4. Visual REST API Studio |
+|:---:|:---:|:---:|:---:|
+| <img src="assets/screenshots/1-deck-overview.jpg" width="220" style="border-radius: 12px;" /> | <img src="assets/screenshots/2-ai-generator.jpg" width="220" style="border-radius: 12px;" /> | <img src="assets/screenshots/3-native-home-screen.jpg" width="220" style="border-radius: 12px;" /> | <img src="assets/screenshots/4-api-jsonpath-studio.jpg" width="220" style="border-radius: 12px;" /> |
+| **Live Telemetry Decks**<br/><sub>Crypto, DevOps, Weather, Battery</sub> | **AI Widget Generator**<br/><sub>Natural language to live widget</sub> | **iOS & Android Parity**<br/><sub>WidgetKit & AppWidgets</sub> | **JSONPath Query Engine**<br/><sub>Connect any REST API in seconds</sub> |
+
+<br/>
+
+| 5. Multi-Deck Workspaces | 6. DevOps & SRE Deck | 7. Crypto & Wealth | 8. Lock Screen Widgets | 9. Theme Customizer |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="assets/screenshots/5-multideck-workspaces.jpg" width="175" style="border-radius: 12px;" /> | <img src="assets/screenshots/6-devops-telemetry.jpg" width="175" style="border-radius: 12px;" /> | <img src="assets/screenshots/7-crypto-wealth.jpg" width="175" style="border-radius: 12px;" /> | <img src="assets/screenshots/8-lockscreen-widgets.jpg" width="175" style="border-radius: 12px;" /> | <img src="assets/screenshots/9-theme-customizer.jpg" width="175" style="border-radius: 12px;" /> |
+| **Workspace Manager**<br/><sub>DevOps, Crypto, Life</sub> | **Cloud & Server Vitals**<br/><sub>CPU, DB, Build pipelines</sub> | **Market Feeds**<br/><sub>BTC, ETH, SOL, Gas</sub> | **Always-On Display**<br/><sub>Accessory & ring widgets</sub> | **Visual Styles**<br/><sub>Glassmorphism & charts</sub> |
+
+</div>
 
 ---
 
