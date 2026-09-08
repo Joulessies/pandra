@@ -65,7 +65,6 @@ type GridRow =
   | { type: 'wide'; widget: CustomWidget; index: number }
   | { type: 'pair'; left: CustomWidget; leftIdx: number; right?: CustomWidget; rightIdx?: number };
 
-// Helper to resolve widget icons
 function renderWidgetIcon(iconType: string, color: string) {
   const props = { size: 16, color };
   switch (iconType) {
@@ -119,17 +118,14 @@ export function DraggableWidgetGrid({
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [hoverTargetIndex, setHoverTargetIndex] = useState<number | null>(null);
 
-  // Drag coordinates & scale animation
   const [pan] = useState(() => new Animated.ValueXY({ x: 0, y: 0 }));
   const [dragScale] = useState(() => new Animated.Value(1));
   const [dragOpacity] = useState(() => new Animated.Value(1));
 
-  // Slot layout measurements
   const layoutsRef = useRef<{ [index: number]: ItemLayout }>({});
   const gridContainerRef = useRef<RNView>(null);
   const gridOriginRef = useRef<{ pageX: number; pageY: number }>({ pageX: 0, pageY: 0 });
 
-  // Keep latest state in refs for callbacks
   const widgetsRef = useRef(widgets);
   const draggingIndexRef = useRef(draggingIndex);
   const hoverTargetIndexRef = useRef(hoverTargetIndex);
@@ -279,7 +275,6 @@ export function DraggableWidgetGrid({
     setPanResponder(pr);
   }, [calculateTargetIndex, dragOpacity, dragScale, handleEndDrag, pan]);
 
-  // Group into pairs or wide rows
   const rows: GridRow[] = useMemo(() => {
     const list: GridRow[] = [];
     let i = 0;
@@ -312,7 +307,7 @@ export function DraggableWidgetGrid({
       borderColor={pandraColors.borderHighlight}
       marginBottom={6}
     >
-      {/* Drag Grip Handle */}
+      { }
       <RNView
         {...(panResponder ? panResponder.panHandlers : {})}
         onTouchStart={() => {
@@ -327,7 +322,7 @@ export function DraggableWidgetGrid({
       </RNView>
 
       <XStack gap={8} alignItems="center">
-        {/* Move Up / Down */}
+        { }
         <TouchableOpacity
           activeOpacity={0.7}
           disabled={index === 0}
@@ -346,7 +341,7 @@ export function DraggableWidgetGrid({
           <ChevronDown size={14} color={pandraColors.textSecondary} />
         </TouchableOpacity>
 
-        {/* 1x1 / 2x1 Size Toggle */}
+        { }
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => onToggleWidgetSize(widget.id)}
@@ -358,7 +353,7 @@ export function DraggableWidgetGrid({
           )}
         </TouchableOpacity>
 
-        {/* Clone */}
+        { }
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => onDuplicateWidget(widget)}
@@ -366,7 +361,7 @@ export function DraggableWidgetGrid({
           <Plus size={13} color={pandraColors.textSecondary} />
         </TouchableOpacity>
 
-        {/* Delete */}
+        { }
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => onDeleteWidget(widget.id, widget.title)}

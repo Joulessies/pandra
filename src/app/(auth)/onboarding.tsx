@@ -9,9 +9,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, {
     useSharedValue,
+    useAnimatedStyle,
     withSpring,
     withTiming,
+    withRepeat,
+    withSequence,
     FadeIn,
+    FadeInDown,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { YStack, XStack, Text, View } from 'tamagui';
@@ -20,17 +24,18 @@ import {
     ArrowLeft,
     Sparkles,
     Zap,
-    Server,
-    Globe,
     Code,
-    ShieldCheck,
     Check,
     RefreshCw,
-    Activity,
-    Terminal,
     CheckCircle2,
+    CloudSun,
+    TrendingUp,
+    Droplets,
+    BatteryCharging,
+    Wand2,
+    Activity,
+    Rocket,
     Cpu,
-    Layers,
     Move,
 } from 'lucide-react-native';
 import { WidgetTile, SparklinePattern } from '@/components/widgets/widgetTile';
@@ -42,13 +47,137 @@ import {
     RolePreset,
     saveOnboardingRolePreference,
 } from '@/services/widget-storage';
-import { measureNetworkLatency } from '@/services/personal-widget-fetcher';
+import { CustomWidget } from '@/types/widget';
+import { useOnboardingStore } from '@/stores';
 
-const SPRING_CONFIG = {
+const PILL_SPRING = {
     damping: 18,
     mass: 1,
-    stiffness: 100,
+    stiffness: 200,
     overshootClamping: false,
+};
+
+interface PromptPreset {
+    id: string;
+    chipLabel: string;
+    prompt: string;
+    title: string;
+    subtitle: string;
+    badge: string;
+    badgeColor: string;
+    metric: string;
+    metricLabel: string;
+    accentColor: string;
+    iconType: 'weather' | 'crypto' | 'counter' | 'battery';
+    sparklinePattern: SparklinePattern;
+    type: 'static' | 'api_fetcher' | 'counter';
+}
+
+const PROMPT_PRESETS: PromptPreset[] = [
+    {
+        id: 'water',
+        chipLabel: '💧 Water Stepper',
+        prompt: 'Daily water hydration tracker with quick + / - cup stepper',
+        title: 'Water Tracker',
+        subtitle: 'Daily Hydration Target',
+        badge: 'OPTIMAL',
+        badgeColor: pandraColors.accentGreen,
+        metric: '6/8 Cups',
+        metricLabel: 'INTERACTIVE COUNTER',
+        accentColor: pandraColors.accentGreen,
+        iconType: 'counter',
+        sparklinePattern: 'growth',
+        type: 'counter',
+    },
+    {
+        id: 'btc',
+        chipLabel: '🪙 Bitcoin Oracle',
+        prompt: 'Live Bitcoin spot price feed with 24h delta from Coinbase',
+        title: 'Bitcoin Oracle',
+        subtitle: 'Coinbase Spot Feed',
+        badge: '+5.4% 24H',
+        badgeColor: pandraColors.accentAmber,
+        metric: '$94,250',
+        metricLabel: 'CRYPTO SPOT FEED',
+        accentColor: pandraColors.accentAmber,
+        iconType: 'crypto',
+        sparklinePattern: 'volatile',
+        type: 'api_fetcher',
+    },
+    {
+        id: 'tokyo',
+        chipLabel: '🌤️ Tokyo Radar',
+        prompt: 'Tokyo weather forecast with live rain radar and humidity',
+        title: 'Tokyo Weather',
+        subtitle: 'Live Precipitation Radar',
+        badge: '22°C CLEAR',
+        badgeColor: pandraColors.accentCyan,
+        metric: '64% HUMIDITY',
+        metricLabel: 'AI WEATHER ENGINE',
+        accentColor: pandraColors.accentCyan,
+        iconType: 'weather',
+        sparklinePattern: 'pulse',
+        type: 'static',
+    },
+    {
+        id: 'battery',
+        chipLabel: '⚡ Battery Reserve',
+        prompt: 'Device hardware battery telemetry with fast charging detection',
+        title: 'Device Battery',
+        subtitle: 'Hardware Power Telemetry',
+        badge: 'FAST CHARGE',
+        badgeColor: pandraColors.accentPurple,
+        metric: '98% CHARGING',
+        metricLabel: 'POWER RESERVE',
+        accentColor: pandraColors.accentPurple,
+        iconType: 'battery',
+        sparklinePattern: 'pulse',
+        type: 'static',
+    },
+];
+
+function PillDot({
+    isActive,
+    color,
+    onPress,
+}: {
+    isActive: boolean;
+    color: string;
+    onPress: () => void;
+}) {
+    const width = useSharedValue(isActive ? 28 : 8);
+
+    useEffect(() => {
+        width.value = withSpring(isActive ? 28 : 8, PILL_SPRING);
+    }, [isActive, width]);
+
+    const style = useAnimatedStyle(() => ({
+        width: width.value,
+        height: 5,
+        borderRadius: 3,
+        backgroundColor: isActive ? color : pandraColors.borderHighlight,
+    }));
+
+    return (
+        <TouchableOpacity activeOpacity={0.7} onPress={onPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Animated.View style={style} />
+        </TouchableOpacity>
+    );
+}
+
+function PersonaIcon({ roleId, color, size = 17 }: { roleId: string; color: string; size?: number }) {
+    if (roleId === 'productivity') return <Rocket size={size} color={color} />;
+    if (roleId === 'crypto') return <TrendingUp size={size} color={color} />;
+    if (roleId === 'ambient') return <CloudSun size={size} color={color} />;
+    if (roleId === 'developer') return <Code size={size} color={color} />;
+    return <Activity size={size} color={color} />;
+}
+
+const PERSONA_EMOJI: Record<string, string> = {
+    productivity: '🚀',
+    crypto: '🪙',
+    ambient: '🌤️',
+    developer: '💻',
 };
 
 export default function OnboardingScreen() {
@@ -56,51 +185,147 @@ export default function OnboardingScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
 
-    const [currentStep, setCurrentStep] = useState(0); // 0: Command Deck, 1: API Telemetry, 2: Personalize Stack
-    const [selectedRole, setSelectedRole] = useState<string>('devops');
-    const [highlightedTile, setHighlightedTile] = useState<number | null>(0);
-    const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+    const {
+        currentStep, selectedRole, highlightedTile, isPaywallOpen,
+        selectedPresetId, promptText, isSynthesizing, apiFetching, liveBtcPrice,
+        setCurrentStep, setSelectedRole, setHighlightedTile, setPaywallOpen,
+        setSelectedPresetId, setPromptText, setIsSynthesizing, setApiFetching,
+        setLiveBtcPrice,
+    } = useOnboardingStore();
+    const [waterCups, setWaterCups] = useState<number>(6);
 
-    // Step 1: Live ticking telemetry state
-    const [liveLatency, setLiveLatency] = useState(14);
-    const [liveRps, setLiveRps] = useState(240);
+    const float0 = useSharedValue(0);
+    const float1 = useSharedValue(0);
+    const float2 = useSharedValue(0);
+    const float3 = useSharedValue(0);
 
-    // Step 2: Interactive API fetch simulator
-    const [apiFetching, setApiFetching] = useState(false);
-    const [apiMetricValue, setApiMetricValue] = useState('$94,250');
-    const [apiSparklinePattern, setApiSparklinePattern] = useState<SparklinePattern>('volatile');
+    const tileScale0 = useSharedValue(1);
+    const tileScale1 = useSharedValue(1);
+    const tileScale2 = useSharedValue(1);
+    const tileScale3 = useSharedValue(1);
 
-    // Reanimated Shared Values for Step Transitions
-    const stepProgress = useSharedValue(0);
-    const ambientGlowOpacity = useSharedValue(0.6);
+    const morphScale = useSharedValue(1);
+    const scanBeamOffset = useSharedValue(-200);
 
-    const cardSize = Math.min((width - 48 - 12) / 2, 155);
+    const personaScales = {
+        productivity: useSharedValue(1),
+        crypto: useSharedValue(1),
+        ambient: useSharedValue(1),
+        developer: useSharedValue(1),
+    } as Record<string, ReturnType<typeof useSharedValue<number>>>;
 
-    // Live real network latency for step 1
     useEffect(() => {
-        const updatePing = async () => {
-            try {
-                const res = await measureNetworkLatency();
-                setLiveLatency(res.latencyMs);
-                setLiveRps(res.rps);
-            } catch {}
-        };
-        updatePing();
-        const interval = setInterval(updatePing, 10000);
-        return () => clearInterval(interval);
-    }, []);
+        float0.value = withRepeat(
+            withSequence(withTiming(-5, { duration: 2200 }), withTiming(5, { duration: 2200 })),
+            -1,
+            true
+        );
+        float1.value = withRepeat(
+            withSequence(withTiming(6, { duration: 2600 }), withTiming(-6, { duration: 2600 })),
+            -1,
+            true
+        );
+        float2.value = withRepeat(
+            withSequence(withTiming(5, { duration: 2400 }), withTiming(-5, { duration: 2400 })),
+            -1,
+            true
+        );
+        float3.value = withRepeat(
+            withSequence(withTiming(-6, { duration: 2800 }), withTiming(6, { duration: 2800 })),
+            -1,
+            true
+        );
+    }, [float0, float1, float2, float3]);
 
-    // Animate step transitions
-    useEffect(() => {
-        stepProgress.value = withSpring(currentStep, SPRING_CONFIG);
-        ambientGlowOpacity.value = withTiming(0.8, { duration: 400 }, () => {
-            ambientGlowOpacity.value = withTiming(0.5, { duration: 800 });
-        });
-    }, [currentStep, ambientGlowOpacity, stepProgress]);
+    const animatedStyleTile0 = useAnimatedStyle(() => ({
+        transform: [{ translateY: float0.value }, { scale: tileScale0.value }],
+    }));
+    const animatedStyleTile1 = useAnimatedStyle(() => ({
+        transform: [{ translateY: float1.value }, { scale: tileScale1.value }],
+    }));
+    const animatedStyleTile2 = useAnimatedStyle(() => ({
+        transform: [{ translateY: float2.value }, { scale: tileScale2.value }],
+    }));
+    const animatedStyleTile3 = useAnimatedStyle(() => ({
+        transform: [{ translateY: float3.value }, { scale: tileScale3.value }],
+    }));
 
-    // Handle role selection change
+    const animatedMorphStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: morphScale.value }],
+    }));
+    const animatedScanBeamStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: scanBeamOffset.value }],
+    }));
+
+    const cardSize = Math.max(160, Math.min((width - 48 - 12) / 2, 175));
+    const topPadding = Math.max(insets.top, 16) + 4;
+    const bottomPadding = Math.max(insets.bottom, 16) + 6;
+
+    const gradientColors =
+        currentStep === 0
+            ? (['rgba(8, 145, 178, 0.16)', 'rgba(5, 150, 105, 0.08)', 'transparent'] as [string, string, string])
+            : currentStep === 1
+            ? (['rgba(124, 58, 237, 0.16)', 'rgba(8, 145, 178, 0.08)', 'transparent'] as [string, string, string])
+            : (['rgba(217, 119, 6, 0.16)', 'rgba(122, 145, 130, 0.08)', 'transparent'] as [string, string, string]);
+
+    const handleTapTile = (index: number) => {
+        setHighlightedTile(index);
+        const targets = [tileScale0, tileScale1, tileScale2, tileScale3];
+        const target = targets[index];
+        if (target) {
+            target.value = withSequence(
+                withSpring(1.05, { damping: 10, stiffness: 200 }),
+                withSpring(1.0, { damping: 14, stiffness: 150 })
+            );
+        }
+    };
+
+    const handleSelectPreset = (preset: PromptPreset) => {
+        setSelectedPresetId(preset.id);
+        setPromptText(preset.prompt);
+        triggerAiMorph();
+    };
+
+    const triggerAiMorph = () => {
+        setIsSynthesizing(true);
+        morphScale.value = withSequence(
+            withSpring(0.94, { damping: 12, stiffness: 180 }),
+            withSpring(1.0, { damping: 12, stiffness: 140 })
+        );
+        scanBeamOffset.value = -180;
+        scanBeamOffset.value = withTiming(380, { duration: 550 });
+        setTimeout(() => setIsSynthesizing(false), 550);
+    };
+
+    const handleSimulateApiFetch = async () => {
+        if (apiFetching) return;
+        setApiFetching(true);
+        triggerAiMorph();
+        try {
+            const res = await fetch('https:
+            if (res.ok) {
+                const data = await res.json();
+                const num = parseFloat(data.data.amount);
+                setLiveBtcPrice(`$${num.toLocaleString()}`);
+            }
+        } catch {
+            setLiveBtcPrice('$94,250');
+        } finally {
+            setApiFetching(false);
+        }
+    };
+
     const handleSelectRole = async (roleId: string) => {
         setSelectedRole(roleId);
+
+        const sv = personaScales[roleId];
+        if (sv) {
+            sv.value = withSequence(
+                withSpring(1.04, { damping: 10, stiffness: 220 }),
+                withSpring(1.0, { damping: 14, stiffness: 160 })
+            );
+        }
+
         try {
             await saveOnboardingRolePreference(roleId);
         } catch (err) {
@@ -108,39 +333,17 @@ export default function OnboardingScreen() {
         }
     };
 
-    // Live real API fetch on Step 2
-    const handleSimulateApiFetch = async () => {
-        if (apiFetching) return;
-        setApiFetching(true);
-        try {
-            const res = await fetch('https://api.coinbase.com/v2/prices/spot?currency=USD');
-            if (res.ok) {
-                const data = await res.json();
-                const num = parseFloat(data.data.amount);
-                setApiMetricValue(`$${num.toLocaleString()}`);
-            }
-        } catch {
-            setApiMetricValue('$94,250');
-        } finally {
-            setApiSparklinePattern((prev: SparklinePattern) => (prev === 'volatile' ? 'growth' : 'volatile'));
-            setApiFetching(false);
-        }
-    };
-
     const handleNext = () => {
         if (currentStep < 2) {
-            setCurrentStep((prev) => prev + 1);
+            setCurrentStep(currentStep + 1);
         } else {
-            // Save chosen role and proceed to sign up
             saveOnboardingRolePreference(selectedRole).catch(() => {});
             router.push('/(auth)/sign-up' as any);
         }
     };
 
     const handleBack = () => {
-        if (currentStep > 0) {
-            setCurrentStep((prev) => prev - 1);
-        }
+        if (currentStep > 0) setCurrentStep(currentStep - 1);
     };
 
     const handleSkip = () => {
@@ -148,32 +351,23 @@ export default function OnboardingScreen() {
         router.push('/(auth)/sign-up' as any);
     };
 
-    const activeRoleConfig: RolePreset = ONBOARDING_ROLES[selectedRole] || ONBOARDING_ROLES.devops;
-
-    const topPadding = Math.max(insets.top, 16) + 4;
-    const bottomPadding = Math.max(insets.bottom, 16) + 6;
+    const activeRoleConfig: RolePreset = ONBOARDING_ROLES[selectedRole] || ONBOARDING_ROLES.productivity;
+    const currentPreset = PROMPT_PRESETS.find((p) => p.id === selectedPresetId) || PROMPT_PRESETS[0];
 
     return (
         <View flex={1} backgroundColor={pandraColors.bg}>
-            {/* Ambient Background Gradient Aura */}
+            { }
             <View
                 position="absolute"
                 top={0}
                 left={0}
                 right={0}
-                height={380}
+                height={420}
                 pointerEvents="none"
                 overflow="hidden"
             >
                 <LinearGradient
-                    colors={[
-                        currentStep === 0
-                            ? 'rgba(146, 164, 152, 0.15)'
-                            : currentStep === 1
-                            ? 'rgba(130, 169, 142, 0.15)'
-                            : 'rgba(174, 194, 181, 0.15)',
-                        'transparent',
-                    ]}
+                    colors={gradientColors}
                     style={{ flex: 1 }}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}
@@ -187,31 +381,36 @@ export default function OnboardingScreen() {
                 paddingBottom={bottomPadding}
                 justifyContent="space-between"
             >
-                {/* 1. TOP BAR */}
+                { }
                 <XStack justifyContent="space-between" alignItems="center" marginBottom={6}>
                     <XStack alignItems="center" gap={8}>
                         <Text
                             fontFamily={fonts.display}
-                            fontSize={16}
+                            fontSize={17}
                             color={pandraColors.text}
                             letterSpacing={-0.3}
                         >
                             Pandra
                         </Text>
                         <View
-                            paddingHorizontal={6}
+                            paddingHorizontal={7}
                             paddingVertical={2}
                             borderRadius={radius.xs}
                             backgroundColor="rgba(16, 185, 129, 0.12)"
                             borderWidth={1}
                             borderColor="rgba(16, 185, 129, 0.3)"
+                            flexDirection="row"
+                            alignItems="center"
+                            gap={4}
                         >
-                            <Text fontFamily={fonts.mono} fontSize={9} color={pandraColors.accentGreen} fontWeight="700">
-                                2.0
+                            <Sparkles size={9} color={pandraColors.accentGreen} />
+                            <Text fontFamily={fonts.mono} fontSize={9.5} color={pandraColors.accentGreen} fontWeight="700">
+                                AI MAKER
                             </Text>
                         </View>
                     </XStack>
 
+                    { }
                     <View
                         paddingHorizontal={10}
                         paddingVertical={3}
@@ -220,11 +419,7 @@ export default function OnboardingScreen() {
                         borderWidth={1}
                         borderColor={pandraColors.border}
                     >
-                        <Text
-                            fontFamily={fonts.mono}
-                            fontSize={11}
-                            color={pandraColors.textSecondary}
-                        >
+                        <Text fontFamily={fonts.mono} fontSize={11} color={pandraColors.textSecondary} fontWeight="600">
                             {currentStep + 1} / 3
                         </Text>
                     </View>
@@ -232,7 +427,7 @@ export default function OnboardingScreen() {
                     <XStack alignItems="center" gap={10}>
                         <TouchableOpacity
                             activeOpacity={0.8}
-                            onPress={() => setIsPaywallOpen(true)}
+                            onPress={() => setPaywallOpen(true)}
                             style={{
                                 paddingHorizontal: 8,
                                 paddingVertical: 4,
@@ -246,7 +441,7 @@ export default function OnboardingScreen() {
                             }}
                         >
                             <Zap size={11} color={pandraColors.accentAmber} />
-                            <Text fontFamily={fonts.bodyMedium} fontSize={10} color={pandraColors.text}>
+                            <Text fontFamily={fonts.bodyMedium} fontSize={10.5} color={pandraColors.text}>
                                 Pro
                             </Text>
                         </TouchableOpacity>
@@ -257,244 +452,330 @@ export default function OnboardingScreen() {
                             style={{ paddingHorizontal: 6, paddingVertical: 6 }}
                             onPress={handleSkip}
                         >
-                            <Text
-                                fontFamily={fonts.bodyMedium}
-                                fontSize={12}
-                                color={pandraColors.textMuted}
-                            >
+                            <Text fontFamily={fonts.bodyMedium} fontSize={12} color={pandraColors.textMuted}>
                                 Skip
                             </Text>
                         </TouchableOpacity>
                     </XStack>
                 </XStack>
 
-                {/* 2. MAIN SCROLLABLE SLIDE CONTENT */}
+                { }
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 8 }}
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 6 }}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* SLIDE 0: REAL-TIME COMMAND DECK */}
+                    { }
+                    { }
+                    { }
                     {currentStep === 0 && (
-                        <Animated.View
-                            entering={FadeIn.duration(300)}
-                            style={{ flex: 1, justifyContent: 'center' }}
-                        >
-
+                        <Animated.View entering={FadeIn.duration(320)} style={{ flex: 1, justifyContent: 'center' }}>
                             <YStack alignItems="center" gap={5} marginBottom={14}>
-                                <View
-                                    paddingHorizontal={10}
-                                    paddingVertical={3}
-                                    borderRadius={radius.xs}
-                                    backgroundColor="rgba(59, 130, 246, 0.08)"
-                                    flexDirection="row"
-                                    alignItems="center"
-                                    gap={5}
-                                >
-                                    <Activity size={12} color={pandraColors.primary} />
+                                <Animated.View entering={FadeInDown.delay(60).duration(340)}>
+                                    <View
+                                        paddingHorizontal={11}
+                                        paddingVertical={3.5}
+                                        borderRadius={radius.full}
+                                        backgroundColor="rgba(8, 145, 178, 0.10)"
+                                        borderWidth={1}
+                                        borderColor="rgba(8, 145, 178, 0.25)"
+                                        flexDirection="row"
+                                        alignItems="center"
+                                        gap={6}
+                                    >
+                                        <Sparkles size={11} color={pandraColors.accentCyan} />
+                                        <Text fontFamily={fonts.mono} fontSize={10.5} fontWeight="600" color={pandraColors.accentCyan}>
+                                            ✨ AI-Powered Widget Engine
+                                        </Text>
+                                    </View>
+                                </Animated.View>
+
+                                <Animated.View entering={FadeInDown.delay(120).duration(340)}>
                                     <Text
-                                        fontFamily={fonts.bodyMedium}
-                                        fontSize={10.5}
-                                        color={pandraColors.primary}
+                                        fontFamily={fonts.display}
+                                        fontSize={23}
+                                        color={pandraColors.text}
+                                        textAlign="center"
+                                        letterSpacing={-0.5}
                                     >
-                                        Real-time command deck
+                                        Create Widgets with AI
                                     </Text>
-                                </View>
+                                </Animated.View>
 
-                                <Text
-                                    fontFamily={fonts.display}
-                                    fontSize={22}
-                                    color={pandraColors.text}
-                                    textAlign="center"
-                                    letterSpacing={-0.5}
-                                >
-                                    Your Pocket Command Center
-                                </Text>
-                                <Text
-                                    fontFamily={fonts.body}
-                                    fontSize={12.5}
-                                    color={pandraColors.textSecondary}
-                                    textAlign="center"
-                                    lineHeight={17}
-                                    paddingHorizontal={12}
-                                >
-                                    Monitor servers, APIs, weather, and hardware telemetry with customizable glass tiles.
-                                </Text>
+                                <Animated.View entering={FadeInDown.delay(180).duration(340)}>
+                                    <Text
+                                        fontFamily={fonts.body}
+                                        fontSize={12.5}
+                                        color={pandraColors.textSecondary}
+                                        textAlign="center"
+                                        lineHeight={17.5}
+                                        paddingHorizontal={10}
+                                    >
+                                        Prompt, personalize, and pin live dynamic widgets directly to your mobile deck.
+                                    </Text>
+                                </Animated.View>
                             </YStack>
 
-                            {/* 2x2 Interactive Live Tiles */}
-                            <YStack alignItems="center" justifyContent="center" gap={10}>
+                            { }
+                            <YStack alignItems="center" justifyContent="center" gap={12}>
+                                { }
                                 <XStack gap={10}>
-                                    <TouchableOpacity
-                                        activeOpacity={0.9}
-                                        onPress={() => setHighlightedTile(0)}
-                                        style={{ width: cardSize, height: cardSize }}
+                                    <Animated.View
+                                        entering={FadeInDown.delay(220).springify()}
+                                        style={[{ width: cardSize, height: 165 }, animatedStyleTile0]}
                                     >
-                                        <WidgetTile
-                                            title="Edge Gateway"
-                                            subtitle="Global Router"
-                                            badge={`${liveLatency} ms`}
-                                            badgeColor={pandraColors.primary}
-                                            icon={<Server size={15} color={pandraColors.primary} />}
-                                            showSparkline={true}
-                                            sparklineColor={pandraColors.primary}
-                                            sparklinePattern="pulse"
-                                            highlighted={highlightedTile === 0}
-                                            isLive={true}
-                                            metric="99.98%"
-                                            metricLabel="UPTIME RATE"
-                                            accentColor={pandraColors.primary}
-                                            flex={1}
-                                        />
-                                    </TouchableOpacity>
+                                        <TouchableOpacity activeOpacity={0.92} onPress={() => handleTapTile(0)} style={{ flex: 1 }}>
+                                            <WidgetTile
+                                                title="Tokyo Weather"
+                                                subtitle="Live Radar"
+                                                badge="22°C"
+                                                badgeColor={pandraColors.accentGreen}
+                                                icon={<CloudSun size={15} color={pandraColors.accentGreen} />}
+                                                showSparkline
+                                                sparklineColor={pandraColors.accentGreen}
+                                                sparklinePattern="growth"
+                                                highlighted={highlightedTile === 0}
+                                                isLive
+                                                metric="CLEAR"
+                                                metricLabel="AI WEATHER ENGINE"
+                                                accentColor={pandraColors.accentGreen}
+                                                flex={1}
+                                            />
+                                        </TouchableOpacity>
+                                    </Animated.View>
 
-                                    <TouchableOpacity
-                                        activeOpacity={0.9}
-                                        onPress={() => setHighlightedTile(1)}
-                                        style={{ width: cardSize, height: cardSize }}
+                                    <Animated.View
+                                        entering={FadeInDown.delay(280).springify()}
+                                        style={[{ width: cardSize, height: 165 }, animatedStyleTile1]}
                                     >
-                                        <WidgetTile
-                                            title="Kubernetes"
-                                            subtitle="24/24 Pods"
-                                            badge="HEALTHY"
-                                            badgeColor={pandraColors.accentGreen}
-                                            icon={<Layers size={15} color={pandraColors.accentGreen} />}
-                                            showSparkline={true}
-                                            sparklineColor={pandraColors.accentGreen}
-                                            sparklinePattern="growth"
-                                            highlighted={highlightedTile === 1}
-                                            isLive={true}
-                                            metric={`${liveRps} r/s`}
-                                            metricLabel="CLUSTER INGEST"
-                                            accentColor={pandraColors.accentGreen}
-                                            flex={1}
-                                        />
-                                    </TouchableOpacity>
+                                        <TouchableOpacity activeOpacity={0.92} onPress={() => handleTapTile(1)} style={{ flex: 1 }}>
+                                            <WidgetTile
+                                                title="Bitcoin Oracle"
+                                                subtitle="Coinbase USD"
+                                                badge="+4.2%"
+                                                badgeColor={pandraColors.accentAmber}
+                                                icon={<TrendingUp size={15} color={pandraColors.accentAmber} />}
+                                                showSparkline
+                                                sparklineColor={pandraColors.accentAmber}
+                                                sparklinePattern="volatile"
+                                                highlighted={highlightedTile === 1}
+                                                isLive
+                                                metric="$94,250"
+                                                metricLabel="CRYPTO ORACLE"
+                                                accentColor={pandraColors.accentAmber}
+                                                flex={1}
+                                            />
+                                        </TouchableOpacity>
+                                    </Animated.View>
                                 </XStack>
 
+                                { }
                                 <XStack gap={10}>
-                                    <TouchableOpacity
-                                        activeOpacity={0.9}
-                                        onPress={() => setHighlightedTile(2)}
-                                        style={{ width: cardSize, height: cardSize }}
+                                    <Animated.View
+                                        entering={FadeInDown.delay(340).springify()}
+                                        style={[{ width: cardSize, height: 165 }, animatedStyleTile2]}
                                     >
-                                        <WidgetTile
-                                            title="Bamboo Sentinel"
-                                            subtitle="Zero-Trust Guard"
-                                            badge="STRICT"
-                                            badgeColor={pandraColors.secondary}
-                                            icon={<ShieldCheck size={15} color={pandraColors.secondary} />}
-                                            showSparkline={true}
-                                            sparklineColor={pandraColors.secondary}
-                                            sparklinePattern="default"
-                                            highlighted={highlightedTile === 2}
-                                            metric="0 THREATS"
-                                            metricLabel="SHIELD STATUS"
-                                            accentColor={pandraColors.secondary}
-                                            flex={1}
-                                        />
-                                    </TouchableOpacity>
+                                        <TouchableOpacity activeOpacity={0.92} onPress={() => handleTapTile(2)} style={{ flex: 1 }}>
+                                            <WidgetTile
+                                                title="Water Tracker"
+                                                subtitle="Daily Hydration"
+                                                badge="OPTIMAL"
+                                                badgeColor={pandraColors.secondary}
+                                                icon={<Droplets size={15} color={pandraColors.secondary} />}
+                                                showSparkline
+                                                sparklineColor={pandraColors.secondary}
+                                                sparklinePattern="default"
+                                                highlighted={highlightedTile === 2}
+                                                metric="6/8 Cups"
+                                                metricLabel="HABIT COUNTER"
+                                                accentColor={pandraColors.secondary}
+                                                flex={1}
+                                            />
+                                        </TouchableOpacity>
+                                    </Animated.View>
 
-                                    <TouchableOpacity
-                                        activeOpacity={0.9}
-                                        onPress={() => setHighlightedTile(3)}
-                                        style={{ width: cardSize, height: cardSize }}
+                                    <Animated.View
+                                        entering={FadeInDown.delay(400).springify()}
+                                        style={[{ width: cardSize, height: 165 }, animatedStyleTile3]}
                                     >
-                                        <WidgetTile
-                                            title="Berry AI Core"
-                                            subtitle="Prompt Compiler"
-                                            badge="READY"
-                                            badgeColor={pandraColors.accentPurple}
-                                            icon={<Cpu size={15} color={pandraColors.accentPurple} />}
-                                            showSparkline={true}
-                                            sparklineColor={pandraColors.accentPurple}
-                                            sparklinePattern="volatile"
-                                            highlighted={highlightedTile === 3}
-                                            metric="480 t/s"
-                                            metricLabel="TOKEN COMPILER"
-                                            accentColor={pandraColors.accentPurple}
-                                            flex={1}
-                                        />
-                                    </TouchableOpacity>
+                                        <TouchableOpacity activeOpacity={0.92} onPress={() => handleTapTile(3)} style={{ flex: 1 }}>
+                                            <WidgetTile
+                                                title="Device Battery"
+                                                subtitle="Hardware Telemetry"
+                                                badge="98%"
+                                                badgeColor={pandraColors.accentPurple}
+                                                icon={<BatteryCharging size={15} color={pandraColors.accentPurple} />}
+                                                showSparkline
+                                                sparklineColor={pandraColors.accentPurple}
+                                                sparklinePattern="pulse"
+                                                highlighted={highlightedTile === 3}
+                                                metric="CHARGING"
+                                                metricLabel="BATTERY HEALTH"
+                                                accentColor={pandraColors.accentPurple}
+                                                flex={1}
+                                            />
+                                        </TouchableOpacity>
+                                    </Animated.View>
                                 </XStack>
                             </YStack>
 
-                            <XStack alignItems="center" justifyContent="center" gap={6} marginTop={10}>
-                                <Move size={11} color={pandraColors.primary} />
-                                <Text
-                                    fontFamily={fonts.mono}
-                                    fontSize={10}
-                                    color={pandraColors.textMuted}
-                                    textAlign="center"
-                                >
-                                    Long-press any widget to drag & organize your deck
-                                </Text>
-                            </XStack>
+                            <Animated.View entering={FadeInDown.delay(460).duration(320)}>
+                                <XStack alignItems="center" justifyContent="center" gap={6} marginTop={14}>
+                                    <Move size={11} color={pandraColors.primary} />
+                                    <Text fontFamily={fonts.mono} fontSize={10.5} color={pandraColors.textMuted} textAlign="center">
+                                        Tap to preview • 📱 Pin to Android & iOS Home Screen
+                                    </Text>
+                                </XStack>
+                            </Animated.View>
                         </Animated.View>
                     )}
 
-                    {/* SLIDE 1: ZERO-CODE API TELEMETRY PLAYGROUND */}
+                    { }
+                    { }
+                    { }
                     {currentStep === 1 && (
-                        <Animated.View
-                            entering={FadeIn.duration(300)}
-                            style={{ flex: 1, justifyContent: 'center' }}
-                        >
-
-                            <YStack alignItems="center" gap={6} marginBottom={14}>
-                                <View
-                                    paddingHorizontal={10}
-                                    paddingVertical={4}
-                                    borderRadius={radius.full}
-                                    backgroundColor={pandraColors.primaryGlow}
-                                    borderWidth={1}
-                                    borderColor={pandraColors.borderGlow}
-                                    flexDirection="row"
-                                    alignItems="center"
-                                    gap={6}
-                                >
-                                    <Terminal size={12} color={pandraColors.primary} />
-                                    <Text
-                                        fontFamily={fonts.mono}
-                                        fontSize={10.5}
-                                        fontWeight="600"
-                                        color={pandraColors.primary}
+                        <Animated.View entering={FadeIn.duration(320)} style={{ flex: 1, justifyContent: 'center' }}>
+                            <YStack alignItems="center" gap={5} marginBottom={12}>
+                                <Animated.View entering={FadeInDown.delay(60).duration(340)}>
+                                    <View
+                                        paddingHorizontal={11}
+                                        paddingVertical={3.5}
+                                        borderRadius={radius.full}
+                                        backgroundColor={pandraColors.primaryGlow}
+                                        borderWidth={1}
+                                        borderColor={pandraColors.borderGlow}
+                                        flexDirection="row"
+                                        alignItems="center"
+                                        gap={6}
                                     >
-                                        Connect any REST API
-                                    </Text>
-                                </View>
+                                        <Wand2 size={11} color={pandraColors.primary} />
+                                        <Text fontFamily={fonts.mono} fontSize={10.5} fontWeight="600" color={pandraColors.primary}>
+                                            Zero-Code AI Synthesis
+                                        </Text>
+                                    </View>
+                                </Animated.View>
 
-                                <Text
-                                    fontFamily={fonts.display}
-                                    fontSize={22}
-                                    color={pandraColors.text}
-                                    textAlign="center"
-                                    letterSpacing={-0.5}
-                                >
-                                    Instant Live Endpoints
-                                </Text>
-                                <Text
-                                    fontFamily={fonts.body}
-                                    fontSize={12.5}
-                                    color={pandraColors.textSecondary}
-                                    textAlign="center"
-                                    lineHeight={17}
-                                    paddingHorizontal={12}
-                                >
-                                    Fetch JSON endpoints with zero backend required. Test the live simulator below:
-                                </Text>
+                                <Animated.View entering={FadeInDown.delay(120).duration(340)}>
+                                    <Text
+                                        fontFamily={fonts.display}
+                                        fontSize={23}
+                                        color={pandraColors.text}
+                                        textAlign="center"
+                                        letterSpacing={-0.5}
+                                    >
+                                        Describe It. AI Ships It.
+                                    </Text>
+                                </Animated.View>
+
+                                <Animated.View entering={FadeInDown.delay(180).duration(340)}>
+                                    <Text
+                                        fontFamily={fonts.body}
+                                        fontSize={12.5}
+                                        color={pandraColors.textSecondary}
+                                        textAlign="center"
+                                        lineHeight={17.5}
+                                        paddingHorizontal={10}
+                                    >
+                                        Tap an inspiration prompt below to watch the widget assemble in real time:
+                                    </Text>
+                                </Animated.View>
                             </YStack>
 
-                            {/* Redesigned Simulated Endpoint Console Box */}
+                            { }
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={{ gap: 8, paddingHorizontal: 2, marginBottom: 12 }}
+                            >
+                                {PROMPT_PRESETS.map((preset) => {
+                                    const isSelected = selectedPresetId === preset.id;
+                                    return (
+                                        <TouchableOpacity
+                                            key={preset.id}
+                                            activeOpacity={0.8}
+                                            onPress={() => handleSelectPreset(preset)}
+                                            style={{
+                                                paddingHorizontal: 12,
+                                                paddingVertical: 6,
+                                                borderRadius: radius.full,
+                                                backgroundColor: isSelected
+                                                    ? preset.accentColor + '20'
+                                                    : pandraColors.surfaceElevated,
+                                                borderWidth: 1.2,
+                                                borderColor: isSelected ? preset.accentColor : pandraColors.border,
+                                            }}
+                                        >
+                                            <Text
+                                                fontFamily={fonts.bodyMedium}
+                                                fontSize={11.5}
+                                                color={isSelected ? preset.accentColor : pandraColors.textSecondary}
+                                                fontWeight={isSelected ? '600' : '400'}
+                                            >
+                                                {preset.chipLabel}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
+
+                            { }
                             <YStack
                                 backgroundColor={pandraColors.surfaceElevated}
                                 borderRadius={radius.lg}
                                 borderWidth={1}
                                 borderColor={pandraColors.borderHighlight}
                                 padding={12}
-                                gap={10}
+                                gap={8}
                                 marginBottom={14}
+                                position="relative"
+                                overflow="hidden"
                             >
-                                {/* Row 1: URL Bar with Method and Status */}
+                                { }
+                                <Animated.View
+                                    pointerEvents="none"
+                                    style={[
+                                        { position: 'absolute', top: 0, bottom: 0, width: 120, zIndex: 10 },
+                                        animatedScanBeamStyle,
+                                    ]}
+                                >
+                                    <LinearGradient
+                                        colors={['transparent', 'rgba(122, 145, 130, 0.35)', 'transparent']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={{ width: '100%', height: '100%' }}
+                                    />
+                                </Animated.View>
+
+                                { }
+                                <XStack justifyContent="space-between" alignItems="center">
+                                    <XStack alignItems="center" gap={6}>
+                                        <Sparkles size={12} color={currentPreset.accentColor} />
+                                        <Text fontFamily={fonts.mono} fontSize={10} color={pandraColors.textMuted} fontWeight="600">
+                                            NATURAL LANGUAGE PROMPT
+                                        </Text>
+                                    </XStack>
+                                    <View
+                                        paddingHorizontal={6}
+                                        paddingVertical={2}
+                                        borderRadius={radius.xs}
+                                        backgroundColor={
+                                            isSynthesizing
+                                                ? 'rgba(124, 58, 237, 0.15)'
+                                                : 'rgba(5, 150, 105, 0.12)'
+                                        }
+                                    >
+                                        <Text
+                                            fontFamily={fonts.mono}
+                                            fontSize={9.5}
+                                            color={isSynthesizing ? pandraColors.accentPurple : pandraColors.accentGreen}
+                                            fontWeight="700"
+                                        >
+                                            {isSynthesizing ? 'SYNTHESIZING…' : 'COMPILED'}
+                                        </Text>
+                                    </View>
+                                </XStack>
+
+                                { }
                                 <View
                                     backgroundColor={pandraColors.bgCanvas}
                                     borderRadius={radius.sm}
@@ -502,320 +783,357 @@ export default function OnboardingScreen() {
                                     borderColor={pandraColors.border}
                                     paddingHorizontal={10}
                                     paddingVertical={8}
-                                    flexDirection="row"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                    gap={8}
                                 >
-                                    <XStack alignItems="center" gap={8} flex={1}>
-                                        <View
-                                            paddingHorizontal={6}
-                                            paddingVertical={2}
-                                            borderRadius={radius.xs}
-                                            backgroundColor="rgba(130, 169, 142, 0.18)"
-                                            borderWidth={1}
-                                            borderColor={pandraColors.accentBamboo}
-                                        >
-                                            <Text fontFamily={fonts.mono} fontSize={10} fontWeight="700" color={pandraColors.accentBamboo}>
-                                                GET
-                                            </Text>
-                                        </View>
-                                        <Text
-                                            fontFamily={fonts.mono}
-                                            fontSize={11}
-                                            color={pandraColors.text}
-                                            flex={1}
-                                            numberOfLines={1}
-                                            ellipsizeMode="middle"
-                                        >
-                                            api.coindesk.com/v1/bpi/currentprice
-                                        </Text>
-                                    </XStack>
-                                    <View flexDirection="row" alignItems="center" gap={4}>
-                                        <View width={5} height={5} borderRadius={2.5} backgroundColor={pandraColors.accentBamboo} />
-                                        <Text fontFamily={fonts.mono} fontSize={9.5} color={pandraColors.textSecondary}>
-                                            HTTPS
-                                        </Text>
-                                    </View>
+                                    <Text fontFamily={fonts.body} fontSize={12} color={pandraColors.text} lineHeight={16}>
+                                        &ldquo;{promptText}&rdquo;
+                                    </Text>
                                 </View>
 
-                                {/* Row 2: JSON Path Key Extractor */}
-                                <XStack alignItems="center" justifyContent="space-between" paddingHorizontal={2}>
-                                    <XStack alignItems="center" gap={5}>
-                                        <Code size={12} color={pandraColors.textSecondary} />
-                                        <Text fontFamily={fonts.bodyMedium} fontSize={11} color={pandraColors.textSecondary}>
-                                            JSON Path:
-                                        </Text>
-                                    </XStack>
-                                    <View
-                                        paddingHorizontal={8}
-                                        paddingVertical={3}
-                                        borderRadius={radius.xs}
-                                        backgroundColor={pandraColors.bgCanvas}
-                                        borderWidth={1}
-                                        borderColor={pandraColors.border}
+                                { }
+                                <XStack gap={8}>
+                                    <TouchableOpacity
+                                        activeOpacity={0.85}
+                                        onPress={triggerAiMorph}
+                                        style={{
+                                            flex: 1,
+                                            height: 36,
+                                            borderRadius: radius.sm,
+                                            backgroundColor: currentPreset.accentColor + '15',
+                                            borderWidth: 1,
+                                            borderColor: currentPreset.accentColor,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 6,
+                                        }}
                                     >
-                                        <Text fontFamily={fonts.mono} fontSize={10.5} color={pandraColors.primary}>
-                                            $.bpi.USD.rate
+                                        <Sparkles size={12} color={currentPreset.accentColor} />
+                                        <Text fontFamily={fonts.bodySemibold} fontSize={11.5} color={currentPreset.accentColor}>
+                                            Resynthesize
                                         </Text>
-                                    </View>
-                                </XStack>
+                                    </TouchableOpacity>
 
-                                {/* Row 3: Action Trigger Button */}
-                                <TouchableOpacity
-                                    activeOpacity={0.85}
-                                    onPress={handleSimulateApiFetch}
-                                    style={{
-                                        height: 38,
-                                        borderRadius: radius.sm,
-                                        backgroundColor: pandraColors.primaryGlow,
-                                        borderWidth: 1,
-                                        borderColor: pandraColors.primary,
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: 7,
-                                    }}
-                                >
-                                    {apiFetching ? (
-                                        <>
-                                            <ActivityIndicator size="small" color={pandraColors.primary} />
+                                    {currentPreset.id === 'btc' && (
+                                        <TouchableOpacity
+                                            activeOpacity={0.85}
+                                            onPress={handleSimulateApiFetch}
+                                            style={{
+                                                flex: 1,
+                                                height: 36,
+                                                borderRadius: radius.sm,
+                                                backgroundColor: pandraColors.primaryGlow,
+                                                borderWidth: 1,
+                                                borderColor: pandraColors.primary,
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 6,
+                                            }}
+                                        >
+                                            {apiFetching ? (
+                                                <ActivityIndicator size="small" color={pandraColors.primary} />
+                                            ) : (
+                                                <RefreshCw size={12} color={pandraColors.primary} />
+                                            )}
                                             <Text fontFamily={fonts.bodySemibold} fontSize={11.5} color={pandraColors.primary}>
-                                                Querying Live API…
+                                                {apiFetching ? 'Fetching…' : 'Live Query'}
                                             </Text>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <RefreshCw size={13} color={pandraColors.primary} />
-                                            <Text fontFamily={fonts.bodySemibold} fontSize={11.5} color={pandraColors.primary}>
-                                                Test live query
-                                            </Text>
-                                        </>
+                                        </TouchableOpacity>
                                     )}
-                                </TouchableOpacity>
+                                </XStack>
                             </YStack>
 
-                            {/* Rendered Live Preview Widget */}
+                            { }
                             <YStack alignItems="center">
-                                <View width="100%" maxWidth={285}>
-                                    <WidgetTile
-                                        title="Bitcoin Oracle"
-                                        subtitle="CoinDesk Live Feed"
-                                        badge={apiFetching ? 'FETCHING' : '200 OK LIVE'}
-                                        badgeColor={pandraColors.accentAmber}
-                                        icon={<Globe size={16} color={pandraColors.accentAmber} />}
-                                        showSparkline={true}
-                                        sparklineColor={pandraColors.accentAmber}
-                                        sparklinePattern={apiSparklinePattern}
-                                        highlighted={true}
-                                        isLive={true}
-                                        metric={apiMetricValue}
-                                        metricLabel="BTC / USD INDEX"
-                                        accentColor={pandraColors.accentAmber}
-                                    />
-                                </View>
+                                <Animated.View style={[{ width: '100%', maxWidth: 300 }, animatedMorphStyle]}>
+                                    {currentPreset.id === 'water' ? (
+                                        <WidgetTile
+                                            title="Water Tracker"
+                                            subtitle="Daily Hydration Target"
+                                            badge="OPTIMAL"
+                                            badgeColor={pandraColors.accentGreen}
+                                            icon={<Droplets size={16} color={pandraColors.accentGreen} />}
+                                            highlighted
+                                            accentColor={pandraColors.accentGreen}
+                                            widget={{
+                                                id: 'water_preview',
+                                                title: 'Water Tracker',
+                                                subtitle: 'Daily Hydration Target',
+                                                badge: 'OPTIMAL',
+                                                badgeColor: pandraColors.accentGreen,
+                                                metric: `${waterCups}/8 Cups`,
+                                                metricLabel: 'INTERACTIVE COUNTER',
+                                                type: 'counter',
+                                                color: pandraColors.accentGreen,
+                                                iconType: 'telemetry',
+                                                counterConfig: {
+                                                    count: waterCups,
+                                                    unitLabel: 'Cups completed',
+                                                },
+                                            } as CustomWidget}
+                                            onCounterIncrement={() => setWaterCups((prev) => Math.min(prev + 1, 16))}
+                                            onCounterDecrement={() => setWaterCups((prev) => Math.max(prev - 1, 0))}
+                                        />
+                                    ) : currentPreset.id === 'btc' ? (
+                                        <WidgetTile
+                                            title="Bitcoin Oracle"
+                                            subtitle="Coinbase USD Feed"
+                                            badge={apiFetching ? 'FETCHING…' : '+5.4% 24H'}
+                                            badgeColor={pandraColors.accentAmber}
+                                            icon={<TrendingUp size={16} color={pandraColors.accentAmber} />}
+                                            showSparkline
+                                            sparklineColor={pandraColors.accentAmber}
+                                            sparklinePattern="volatile"
+                                            highlighted
+                                            isLive
+                                            metric={liveBtcPrice}
+                                            metricLabel="CRYPTO SPOT ORACLE"
+                                            accentColor={pandraColors.accentAmber}
+                                        />
+                                    ) : currentPreset.id === 'tokyo' ? (
+                                        <WidgetTile
+                                            title="Tokyo Weather"
+                                            subtitle="Precipitation Radar"
+                                            badge="22°C CLEAR"
+                                            badgeColor={pandraColors.accentCyan}
+                                            icon={<CloudSun size={16} color={pandraColors.accentCyan} />}
+                                            showSparkline
+                                            sparklineColor={pandraColors.accentCyan}
+                                            sparklinePattern="pulse"
+                                            highlighted
+                                            isLive
+                                            metric="64% HUMIDITY"
+                                            metricLabel="AI WEATHER ENGINE"
+                                            accentColor={pandraColors.accentCyan}
+                                        />
+                                    ) : (
+                                        <WidgetTile
+                                            title="Device Battery"
+                                            subtitle="Hardware Telemetry"
+                                            badge="FAST CHARGE"
+                                            badgeColor={pandraColors.accentPurple}
+                                            icon={<BatteryCharging size={16} color={pandraColors.accentPurple} />}
+                                            showSparkline
+                                            sparklineColor={pandraColors.accentPurple}
+                                            sparklinePattern="pulse"
+                                            highlighted
+                                            metric="98% POWER"
+                                            metricLabel="BATTERY HEALTH"
+                                            accentColor={pandraColors.accentPurple}
+                                        />
+                                    )}
+                                </Animated.View>
+
+                                <XStack alignItems="center" gap={5} marginTop={10}>
+                                    <Sparkles size={11} color={pandraColors.primary} />
+                                    <Text fontFamily={fonts.mono} fontSize={10} color={pandraColors.textMuted}>
+                                        Synthesized in 0.38s via Pandra Neural Engine
+                                    </Text>
+                                </XStack>
                             </YStack>
                         </Animated.View>
                     )}
 
-                    {/* SLIDE 2: USE CASE & ROLE PERSONALIZATION */}
+                    { }
+                    { }
+                    { }
                     {currentStep === 2 && (
-                        <Animated.View
-                            entering={FadeIn.duration(300)}
-                            style={{ flex: 1, justifyContent: 'center' }}
-                        >
-
-                            <YStack alignItems="center" gap={4} marginBottom={10}>
-                                <View
-                                    paddingHorizontal={10}
-                                    paddingVertical={3}
-                                    borderRadius={radius.xs}
-                                    backgroundColor="rgba(16, 185, 129, 0.08)"
-                                    flexDirection="row"
-                                    alignItems="center"
-                                    gap={5}
-                                >
-                                    <Sparkles size={12} color={pandraColors.accentGreen} />
-                                    <Text
-                                        fontFamily={fonts.bodyMedium}
-                                        fontSize={10.5}
-                                        color={pandraColors.accentGreen}
+                        <Animated.View entering={FadeIn.duration(320)} style={{ flex: 1, justifyContent: 'center' }}>
+                            <YStack alignItems="center" gap={5} marginBottom={12}>
+                                <Animated.View entering={FadeInDown.delay(60).duration(340)}>
+                                    <View
+                                        paddingHorizontal={11}
+                                        paddingVertical={3.5}
+                                        borderRadius={radius.full}
+                                        backgroundColor="rgba(16, 185, 129, 0.10)"
+                                        borderWidth={1}
+                                        borderColor="rgba(16, 185, 129, 0.25)"
+                                        flexDirection="row"
+                                        alignItems="center"
+                                        gap={6}
                                     >
-                                        Personalize your setup
-                                    </Text>
-                                </View>
+                                        <Cpu size={11} color={pandraColors.accentGreen} />
+                                        <Text fontFamily={fonts.mono} fontSize={10.5} fontWeight="600" color={pandraColors.accentGreen}>
+                                            Instant Workspace Seeding
+                                        </Text>
+                                    </View>
+                                </Animated.View>
 
-                                <Text
-                                    fontFamily={fonts.display}
-                                    fontSize={22}
-                                    color={pandraColors.text}
-                                    textAlign="center"
-                                    letterSpacing={-0.5}
-                                >
-                                    Tailor Your Dashboard
-                                </Text>
-                                <Text
-                                    fontFamily={fonts.body}
-                                    fontSize={12.5}
-                                    color={pandraColors.textSecondary}
-                                    textAlign="center"
-                                >
-                                    Choose what you monitor to pre-configure your deck:
-                                </Text>
+                                <Animated.View entering={FadeInDown.delay(120).duration(340)}>
+                                    <Text
+                                        fontFamily={fonts.display}
+                                        fontSize={23}
+                                        color={pandraColors.text}
+                                        textAlign="center"
+                                        letterSpacing={-0.5}
+                                    >
+                                        Choose Your AI Widget Persona
+                                    </Text>
+                                </Animated.View>
+
+                                <Animated.View entering={FadeInDown.delay(180).duration(340)}>
+                                    <Text
+                                        fontFamily={fonts.body}
+                                        fontSize={12.5}
+                                        color={pandraColors.textSecondary}
+                                        textAlign="center"
+                                        lineHeight={17.5}
+                                    >
+                                        Pick your starting vibe. Prompt and create unlimited custom widgets anytime.
+                                    </Text>
+                                </Animated.View>
                             </YStack>
 
-                            {/* 4 Selectable Role Options */}
-                            <YStack gap={7} marginBottom={10}>
-                                {Object.values(ONBOARDING_ROLES).map((role) => {
+                            { }
+                            <YStack gap={8} marginBottom={12}>
+                                {Object.values(ONBOARDING_ROLES).map((role, index) => {
                                     const isSelected = selectedRole === role.id;
+                                    const emoji = PERSONA_EMOJI[role.id] ?? '✦';
+                                    const sv = personaScales[role.id];
+
+                                    const cardAnimStyle = useAnimatedStyle(() => ({
+                                        transform: [{ scale: sv ? sv.value : 1 }],
+                                    }));
+
                                     return (
-                                        <TouchableOpacity
+                                        <Animated.View
                                             key={role.id}
-                                            activeOpacity={0.8}
-                                            onPress={() => handleSelectRole(role.id)}
-                                            style={{
-                                                padding: 9,
-                                                borderRadius: radius.md,
-                                                backgroundColor: isSelected
-                                                    ? pandraColors.surfaceElevated
-                                                    : pandraColors.surface,
-                                                borderWidth: 1.5,
-                                                borderColor: isSelected
-                                                    ? role.color
-                                                    : pandraColors.border,
-                                                flexDirection: 'row',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                            }}
+                                            entering={FadeInDown.delay(220 + index * 70).springify()}
+                                            style={cardAnimStyle}
                                         >
-                                            <XStack alignItems="center" gap={10} flex={1}>
+                                            <TouchableOpacity
+                                                activeOpacity={0.85}
+                                                onPress={() => handleSelectRole(role.id)}
+                                                style={{
+                                                    padding: 10,
+                                                    borderRadius: radius.md,
+                                                    backgroundColor: isSelected
+                                                        ? pandraColors.surfaceElevated
+                                                        : pandraColors.surface,
+                                                    borderWidth: 1.5,
+                                                    borderColor: isSelected ? role.color : pandraColors.border,
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    
+                                                    ...(isSelected && {
+                                                        shadowColor: role.color,
+                                                        shadowOffset: { width: 0, height: 0 },
+                                                        shadowOpacity: 0.3,
+                                                        shadowRadius: 8,
+                                                        elevation: 4,
+                                                    }),
+                                                }}
+                                            >
+                                                <XStack alignItems="center" gap={10} flex={1}>
+                                                    { }
+                                                    <View
+                                                        width={36}
+                                                        height={36}
+                                                        borderRadius={radius.sm}
+                                                        backgroundColor={role.color + '22'}
+                                                        borderWidth={1}
+                                                        borderColor={isSelected ? role.color : role.color + '55'}
+                                                        alignItems="center"
+                                                        justifyContent="center"
+                                                    >
+                                                        <PersonaIcon roleId={role.id} color={role.color} />
+                                                    </View>
+
+                                                    { }
+                                                    <YStack flex={1}>
+                                                        <XStack alignItems="center" gap={6}>
+                                                            <Text fontFamily={fonts.bodySemibold} fontSize={13.5} color={pandraColors.text}>
+                                                                {emoji} {role.title}
+                                                            </Text>
+                                                            <View
+                                                                paddingHorizontal={5.5}
+                                                                paddingVertical={1.5}
+                                                                borderRadius={radius.xs}
+                                                                backgroundColor={role.color + '18'}
+                                                            >
+                                                                <Text fontFamily={fonts.mono} fontSize={9} fontWeight="700" color={role.color}>
+                                                                    {role.badge}
+                                                                </Text>
+                                                            </View>
+                                                        </XStack>
+                                                        <Text
+                                                            fontFamily={fonts.body}
+                                                            fontSize={11}
+                                                            color={pandraColors.textSecondary}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {role.subtitle}
+                                                        </Text>
+                                                    </YStack>
+                                                </XStack>
+
+                                                { }
                                                 <View
-                                                    width={32}
-                                                    height={32}
-                                                    borderRadius={radius.sm}
-                                                    backgroundColor={role.color + '22'}
-                                                    borderWidth={1}
-                                                    borderColor={role.color}
+                                                    width={22}
+                                                    height={22}
+                                                    borderRadius={11}
+                                                    borderWidth={1.5}
+                                                    borderColor={isSelected ? role.color : pandraColors.borderHighlight}
+                                                    backgroundColor={isSelected ? role.color : 'transparent'}
                                                     alignItems="center"
                                                     justifyContent="center"
                                                 >
-                                                    {role.id === 'devops' && <Server size={16} color={role.color} />}
-                                                    {role.id === 'ai_ops' && <Cpu size={16} color={role.color} />}
-                                                    {role.id === 'crypto' && <Globe size={16} color={role.color} />}
-                                                    {role.id === 'developer' && <Code size={16} color={role.color} />}
+                                                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
                                                 </View>
-
-                                                <YStack flex={1}>
-                                                    <XStack alignItems="center" gap={6}>
-                                                        <Text
-                                                            fontFamily={fonts.bodySemibold}
-                                                            fontSize={13}
-                                                            color={pandraColors.text}
-                                                        >
-                                                            {role.title}
-                                                        </Text>
-                                                        <View
-                                                            paddingHorizontal={5}
-                                                            paddingVertical={1.5}
-                                                            borderRadius={radius.xs}
-                                                            backgroundColor={role.color + '18'}
-                                                        >
-                                                            <Text
-                                                                fontFamily={fonts.mono}
-                                                                fontSize={9}
-                                                                fontWeight="700"
-                                                                color={role.color}
-                                                            >
-                                                                {role.badge}
-                                                            </Text>
-                                                        </View>
-                                                    </XStack>
-                                                    <Text
-                                                        fontFamily={fonts.body}
-                                                        fontSize={11}
-                                                        color={pandraColors.textSecondary}
-                                                        numberOfLines={1}
-                                                    >
-                                                        {role.subtitle}
-                                                    </Text>
-                                                </YStack>
-                                            </XStack>
-
-                                            <View
-                                                width={20}
-                                                height={20}
-                                                borderRadius={10}
-                                                borderWidth={1.5}
-                                                borderColor={isSelected ? role.color : pandraColors.borderHighlight}
-                                                backgroundColor={isSelected ? role.color : 'transparent'}
-                                                alignItems="center"
-                                                justifyContent="center"
-                                            >
-                                                {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
-                                            </View>
-                                        </TouchableOpacity>
+                                            </TouchableOpacity>
+                                        </Animated.View>
                                     );
                                 })}
                             </YStack>
 
-                            {/* Tailored Seeded Deck Preview Highlight */}
-                            <XStack
-                                alignItems="center"
-                                justifyContent="space-between"
-                                backgroundColor={pandraColors.surface}
-                                paddingHorizontal={12}
-                                paddingVertical={8}
-                                borderRadius={radius.sm}
-                                borderWidth={1}
-                                borderColor={pandraColors.border}
-                            >
-                                <XStack alignItems="center" gap={6}>
-                                    <CheckCircle2 size={14} color={activeRoleConfig.color} />
-                                    <Text fontFamily={fonts.mono} fontSize={11} color={pandraColors.text}>
-                                        4 tailored widgets ready for your deck
+                            { }
+                            <Animated.View entering={FadeInDown.delay(520).duration(320)}>
+                                <XStack
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                    backgroundColor={pandraColors.surface}
+                                    paddingHorizontal={12}
+                                    paddingVertical={9}
+                                    borderRadius={radius.sm}
+                                    borderWidth={1}
+                                    borderColor={pandraColors.border}
+                                >
+                                    <XStack alignItems="center" gap={7}>
+                                        <CheckCircle2 size={15} color={activeRoleConfig.color} />
+                                        <Text fontFamily={fonts.mono} fontSize={11} color={pandraColors.text}>
+                                            4 tailored AI widgets pre-loaded on deck
+                                        </Text>
+                                    </XStack>
+                                    <Text fontFamily={fonts.bodySemibold} fontSize={10.5} color={activeRoleConfig.color}>
+                                        Ready
                                     </Text>
                                 </XStack>
-                                <Text fontFamily={fonts.bodyMedium} fontSize={10} color={activeRoleConfig.color}>
-                                    Ready
-                                </Text>
-                            </XStack>
+                            </Animated.View>
                         </Animated.View>
                     )}
                 </ScrollView>
 
-                {/* 3. BOTTOM CONTROLS & PAGINATION */}
+                { }
                 <YStack gap={10} paddingTop={6}>
-                    {/* Animated Step Dots */}
+                    { }
                     <XStack justifyContent="center" alignItems="center" gap={6}>
-                        {[0, 1, 2].map((idx) => {
-                            const isActive = currentStep === idx;
-                            return (
-                                <TouchableOpacity
-                                    key={idx}
-                                    onPress={() => setCurrentStep(idx)}
-                                    activeOpacity={0.7}
-                                    style={{
-                                        height: 5,
-                                        width: isActive ? 26 : 7,
-                                        borderRadius: 3,
-                                        backgroundColor: isActive
-                                            ? pandraColors.primary
-                                            : pandraColors.borderHighlight,
-                                    }}
-                                />
-                            );
-                        })}
+                        {[0, 1, 2].map((idx) => (
+                            <PillDot
+                                key={idx}
+                                isActive={currentStep === idx}
+                                color={pandraColors.primary}
+                                onPress={() => setCurrentStep(idx)}
+                            />
+                        ))}
                     </XStack>
 
-                    {/* Google Quick Auth on final step */}
+                    { }
                     {currentStep === 2 && (
-                        <GoogleSignInButton
-                            label="Quick sign in with Google"
-                            style={{ marginBottom: 2 }}
-                        />
+                        <GoogleSignInButton label="Quick sign in with Google" style={{ marginBottom: 2 }} />
                     )}
 
-                    {/* Navigation Buttons */}
+                    { }
                     <XStack gap={10}>
                         {currentStep > 0 && (
                             <TouchableOpacity
@@ -847,7 +1165,7 @@ export default function OnboardingScreen() {
                                 flex: 1,
                                 height: 48,
                                 borderRadius: radius.md,
-                                backgroundColor: pandraColors.primary,
+                                backgroundColor: currentStep === 2 ? pandraColors.accentGreen : pandraColors.primary,
                                 flexDirection: 'row',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -855,44 +1173,35 @@ export default function OnboardingScreen() {
                             }}
                             onPress={handleNext}
                         >
-                            <Text
-                                fontFamily={fonts.bodySemibold}
-                                fontSize={14}
-                                color="#FFFFFF"
-                            >
-                                {currentStep === 0 && 'Explore APIs'}
-                                {currentStep === 1 && 'Personalize deck'}
-                                {currentStep === 2 && 'Get started'}
+                            <Text fontFamily={fonts.bodySemibold} fontSize={14.5} color="#FFFFFF">
+                                {currentStep === 0 && 'Try AI Prompting'}
+                                {currentStep === 1 && 'Choose Your Persona'}
+                                {currentStep === 2 && 'Launch Your Deck 🚀'}
                             </Text>
                             <ArrowRight size={16} color="#FFFFFF" />
                         </TouchableOpacity>
                     </XStack>
 
-                    {/* Already have an account link */}
+                    { }
                     <TouchableOpacity
                         activeOpacity={0.7}
-                        style={{
-                            height: 28,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
+                        style={{ height: 28, alignItems: 'center', justifyContent: 'center' }}
                         onPress={() => router.push('/(auth)/sign-in' as any)}
                     >
-                        <Text
-                            fontFamily={fonts.bodyMedium}
-                            fontSize={12}
-                            color={pandraColors.textSecondary}
-                        >
-                            Already have an account? <Text color={pandraColors.primary} fontFamily={fonts.bodySemibold}>Sign In</Text>
+                        <Text fontFamily={fonts.bodyMedium} fontSize={12} color={pandraColors.textSecondary}>
+                            Already have an account?{' '}
+                            <Text color={pandraColors.primary} fontFamily={fonts.bodySemibold}>
+                                Sign In
+                            </Text>
                         </Text>
                     </TouchableOpacity>
                 </YStack>
 
-                {/* Pro Pass Preview Modal */}
+                { }
                 <PaywallModal
                     isOpen={isPaywallOpen}
-                    onClose={() => setIsPaywallOpen(false)}
-                    featureContext="Unlock unlimited API widgets, 10s polling rate, and AI telemetry summaries."
+                    onClose={() => setPaywallOpen(false)}
+                    featureContext="Unlock unlimited AI widgets, 10s polling rate, and neural telemetry summaries."
                 />
             </YStack>
         </View>

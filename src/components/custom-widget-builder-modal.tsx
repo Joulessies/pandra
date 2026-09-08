@@ -26,8 +26,10 @@ import {
   Minimize2,
   TrendingUp,
   TrendingDown,
+  Sparkles,
 } from 'lucide-react-native';
 import { pandraColors, fonts, radius } from '@/theme/token';
+import { synthesizeWidgetFromPrompt } from '@/services/ai-widget-synthesizer';
 import {
   CustomWidget,
   WidgetIconType,
@@ -46,6 +48,7 @@ import {
 } from '@/services/personal-widget-fetcher';
 import { fetchApiWidgetData } from '@/services/api-fetcher';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import useWidgetBuilderStore from '@/stores/widgetBuilderStore';
 
 let ExpoImagePicker: any = null;
 try {
@@ -64,10 +67,10 @@ interface CustomWidgetBuilderModalProps {
 type BuilderCategory = 'photo' | 'weather' | 'battery' | 'news' | 'note' | 'counter' | 'api' | 'static';
 
 const PRESET_WALLPAPERS = [
-  { label: 'Cyber Tokyo', url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=600&auto=format&fit=crop&q=80' },
-  { label: 'Panda Minimal', url: 'https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?w=600&auto=format&fit=crop&q=80' },
-  { label: 'Neon Circuit', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop&q=80' },
-  { label: 'Deep Space', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80' },
+  { label: 'Cyber Tokyo', url: 'https:
+  { label: 'Panda Minimal', url: 'https:
+  { label: 'Neon Circuit', url: 'https:
+  { label: 'Deep Space', url: 'https:
 ];
 
 const COLOR_OPTIONS = [
@@ -104,61 +107,157 @@ export function CustomWidgetBuilderModal({
   editingWidget,
 }: CustomWidgetBuilderModalProps) {
   const insets = useSafeAreaInsets();
-  const [activeCategory, setActiveCategory] = useState<BuilderCategory>('photo');
+  const {
+    activeCategory,
+    title,
+    subtitle,
+    selectedColor,
+    selectedIcon,
+    selectedSize,
+    cardStyle,
+    sparklinePattern,
+    hasTrend,
+    trendValue,
+    trendPositive,
+    customMetric,
+    customMetricLabel,
+    photoUrl,
+    photoCaption,
+    selectedCity,
+    tempUnit,
+    weatherLiveTemp,
+    weatherCondition,
+    batteryLevel,
+    isCharging,
+    newsSource,
+    newsHeadline,
+    noteContent,
+    noteTag,
+    counterCount,
+    counterUnit,
+    apiUrl,
+    apiJsonPath,
+    apiUnit,
+    apiTestResult,
+    aiFillPrompt,
+    isAiFilling,
+    setActiveCategory,
+    setTitle,
+    setSubtitle,
+    setSelectedColor,
+    setSelectedIcon,
+    setSelectedSize,
+    setCardStyle,
+    setSparklinePattern,
+    setHasTrend,
+    setTrendValue,
+    setTrendPositive,
+    setCustomMetric,
+    setCustomMetricLabel,
+    setPhotoUrl,
+    setPhotoCaption,
+    setSelectedCity,
+    setTempUnit,
+    setWeatherLiveTemp,
+    setWeatherCondition,
+    setBatteryLevel,
+    setIsCharging,
+    setNewsSource,
+    setNewsHeadline,
+    setNoteContent,
+    setNoteTag,
+    setCounterCount,
+    setCounterUnit,
+    setApiUrl,
+    setApiJsonPath,
+    setApiUnit,
+    setApiTestResult,
+    setAiFillPrompt,
+    setIsAiFilling,
+  } = useWidgetBuilderStore();
 
-  // Common metadata
-  const [title, setTitle] = useState('Personal Photo');
-  const [subtitle, setSubtitle] = useState('My Inspiration');
-  const [selectedColor, setSelectedColor] = useState<string>(pandraColors.primary);
-  const [selectedIcon, setSelectedIcon] = useState<WidgetIconType>('image');
-  const [selectedSize, setSelectedSize] = useState<WidgetSize>('standard');
-  const [cardStyle, setCardStyle] = useState<WidgetCardStyle>('solid');
-  const [sparklinePattern, setSparklinePattern] = useState<SparklineStyle>('default');
-
-  // Trend Delta
-  const [hasTrend, setHasTrend] = useState(false);
-  const [trendValue, setTrendValue] = useState('+14.2%');
-  const [trendPositive, setTrendPositive] = useState(true);
-
-  // Custom static metric
-  const [customMetric, setCustomMetric] = useState('99.9%');
-  const [customMetricLabel, setCustomMetricLabel] = useState('Availability');
-
-  // Category specific state
-  // 1. Photo
-  const [photoUrl, setPhotoUrl] = useState(PRESET_WALLPAPERS[0].url);
-  const [photoCaption, setPhotoCaption] = useState('Never stop building 🚀');
-
-  // 2. Weather
-  const [selectedCity, setSelectedCity] = useState(PRESET_CITIES[0]);
-  const [tempUnit, setTempUnit] = useState<'celsius' | 'fahrenheit'>('celsius');
-  const [weatherLiveTemp, setWeatherLiveTemp] = useState('22°C');
-  const [weatherCondition, setWeatherCondition] = useState('Clear Sky');
-
-  // 3. Battery
-  const [batteryLevel, setBatteryLevel] = useState(88);
-  const [isCharging, setIsCharging] = useState(false);
-
-  // 4. News
-  const [newsSource, setNewsSource] = useState<'hackernews' | 'devto' | 'ai' | 'techcrunch'>('hackernews');
-  const [newsHeadline, setNewsHeadline] = useState('Modern developer toolchains report 40% latency reduction');
-
-  // 5. Note
-  const [noteContent, setNoteContent] = useState('Refactor edge router before Monday release. Run full test matrix.');
-  const [noteTag, setNoteTag] = useState('priority');
-
-  // 6. Counter
-  const [counterCount, setCounterCount] = useState(4);
-  const [counterUnit, setCounterUnit] = useState('Deploys Today');
-
-  // 7. API
-  const [apiUrl, setApiUrl] = useState('https://api.github.com/repos/facebook/react');
-  const [apiJsonPath, setApiJsonPath] = useState('stargazers_count');
-  const [apiUnit, setApiUnit] = useState('★');
-  const [apiTestResult, setApiTestResult] = useState<string | null>(null);
   const [_isLoading, setIsLoading] = useState(false);
 
-  // Prepopulate if editing an existing widget
+  const handleAiMagicFill = async (promptQuery: string) => {
+    const query = promptQuery.trim();
+    if (!query) return;
+    setIsAiFilling(true);
+    try {
+      const syn = await synthesizeWidgetFromPrompt(query);
+      setTitle(syn.title);
+      setSubtitle(syn.subtitle);
+      setSelectedColor(syn.color || pandraColors.primary);
+      setSelectedIcon(syn.iconType || 'zap');
+      setSelectedSize(syn.size || 'standard');
+      setCardStyle(syn.cardStyle || 'solid');
+      setSparklinePattern(syn.sparklinePattern || 'default');
+
+      if (syn.trend) {
+        setHasTrend(true);
+        setTrendValue(syn.trend.value);
+        setTrendPositive(syn.trend.isPositive);
+      } else {
+        setHasTrend(false);
+      }
+
+      if (syn.type === 'weather') {
+        setActiveCategory('weather');
+        if (syn.weatherConfig) {
+          setWeatherLiveTemp(syn.weatherConfig.temperature || '22°C');
+          setWeatherCondition(syn.weatherConfig.condition || 'Clear Sky');
+          setTempUnit(syn.weatherConfig.unit || 'celsius');
+        }
+      } else if (syn.type === 'battery') {
+        setActiveCategory('battery');
+        if (syn.batteryConfig) {
+          setBatteryLevel(syn.batteryConfig.levelPercent ?? 88);
+          setIsCharging(!!syn.batteryConfig.isCharging);
+        }
+      } else if (syn.type === 'news') {
+        setActiveCategory('news');
+        if (syn.newsConfig) {
+          setNewsSource(syn.newsConfig.source || 'hackernews');
+          setNewsHeadline(syn.newsConfig.headline || '');
+        }
+      } else if (syn.type === 'note') {
+        setActiveCategory('note');
+        if (syn.noteConfig) {
+          setNoteContent(syn.noteConfig.text || '');
+          setNoteTag(syn.noteConfig.tag || 'memo');
+        }
+      } else if (syn.type === 'counter') {
+        setActiveCategory('counter');
+        if (syn.counterConfig) {
+          setCounterCount(syn.counterConfig.count ?? 0);
+          setCounterUnit(syn.counterConfig.unitLabel || 'Count');
+        }
+      } else if (syn.type === 'api_fetcher') {
+        setActiveCategory('api');
+        if (syn.apiConfig) {
+          setApiUrl(syn.apiConfig.endpointUrl);
+          setApiJsonPath(syn.apiConfig.jsonPath);
+          setApiUnit(syn.apiConfig.unit || '');
+        }
+      } else if (syn.type === 'photo') {
+        setActiveCategory('photo');
+        if (syn.photoConfig) {
+          setPhotoUrl(syn.photoConfig.imageUrl);
+          setPhotoCaption(syn.photoConfig.caption || '');
+        }
+      } else {
+        setActiveCategory('static');
+        setCustomMetric(syn.metric || '99.9%');
+        setCustomMetricLabel(syn.metricLabel || 'Status');
+      }
+      setAiFillPrompt('');
+      Alert.alert('AI Magic Fill Applied', `Form filled with "${syn.title}". Customize further or save!`);
+    } catch (err: any) {
+      Alert.alert('AI Magic Fill Error', err?.message || 'Failed to parse prompt.');
+    } finally {
+      setIsAiFilling(false);
+    }
+  };
+
   useEffect(() => {
     if (editingWidget) {
       setTitle(editingWidget.title);
@@ -221,7 +320,7 @@ export function CustomWidgetBuilderModal({
         setActiveCategory('static');
       }
     } else {
-      // Reset for creation
+
       setSelectedSize('standard');
       setCardStyle('solid');
       setSparklinePattern('default');
@@ -229,7 +328,6 @@ export function CustomWidgetBuilderModal({
     }
   }, [editingWidget, isOpen]);
 
-  // Switch category presets
   const handleSelectCategory = (cat: BuilderCategory) => {
     setActiveCategory(cat);
     if (!editingWidget) {
@@ -509,7 +607,6 @@ export function CustomWidgetBuilderModal({
 
   const bottomPadding = Math.max(insets.bottom, 16);
 
-  // Build preview object
   const previewWidget: CustomWidget = {
     id: 'preview',
     title: title || 'My Widget',
@@ -547,7 +644,7 @@ export function CustomWidgetBuilderModal({
           paddingBottom={bottomPadding}
           paddingHorizontal={20}
         >
-          {/* Drag Handle */}
+          { }
           <View
             width={36}
             height={4}
@@ -557,7 +654,7 @@ export function CustomWidgetBuilderModal({
             marginBottom={14}
           />
 
-          {/* Header */}
+          { }
           <XStack justifyContent="space-between" alignItems="center" marginBottom={14}>
             <YStack>
               <Text fontFamily={fonts.bodySemibold} fontSize={16} color={pandraColors.text}>
@@ -586,7 +683,107 @@ export function CustomWidgetBuilderModal({
           </XStack>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Widget Category Selector Tabs */}
+            { }
+            <YStack
+              backgroundColor={pandraColors.bg}
+              borderRadius={radius.sm}
+              padding={12}
+              gap={8}
+              marginBottom={16}
+              borderWidth={1}
+              borderColor={pandraColors.borderHighlight}
+            >
+              <XStack alignItems="center" justifyContent="space-between">
+                <XStack alignItems="center" gap={6}>
+                  <Sparkles size={13} color={pandraColors.primary} />
+                  <Text fontFamily={fonts.bodySemibold} fontSize={12} color={pandraColors.text}>
+                    AI Magic Fill
+                  </Text>
+                </XStack>
+                <Text fontFamily={fonts.body} fontSize={10.5} color={pandraColors.textMuted}>
+                  Auto-fill entire form with AI
+                </Text>
+              </XStack>
+
+              <XStack
+                backgroundColor={pandraColors.surface}
+                borderRadius={radius.xs}
+                borderWidth={1}
+                borderColor={pandraColors.border}
+                alignItems="center"
+                paddingHorizontal={10}
+                height={38}
+                gap={6}
+              >
+                <Input
+                  flex={1}
+                  height={36}
+                  backgroundColor="transparent"
+                  borderWidth={0}
+                  fontFamily={fonts.body}
+                  fontSize={12}
+                  color={pandraColors.text}
+                  placeholder="e.g. 'Paris rain radar', 'Daily pushups counter'..."
+                  placeholderTextColor={pandraColors.textDim as any}
+                  value={aiFillPrompt}
+                  onChangeText={setAiFillPrompt}
+                  onSubmitEditing={() => handleAiMagicFill(aiFillPrompt)}
+                  returnKeyType="go"
+                />
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  disabled={isAiFilling}
+                  onPress={() => handleAiMagicFill(aiFillPrompt)}
+                  style={{
+                    height: 28,
+                    paddingHorizontal: 10,
+                    borderRadius: radius.xs,
+                    backgroundColor: pandraColors.primary,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Sparkles size={11} color="#FFF" />
+                  <Text fontFamily={fonts.bodyMedium} fontSize={11} color="#FFF">
+                    {isAiFilling ? 'Filling…' : 'Fill'}
+                  </Text>
+                </TouchableOpacity>
+              </XStack>
+
+              { }
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingTop: 2 }}>
+                {[
+                  { label: '🌤️ Tokyo Weather', prompt: 'Tokyo weather live forecast' },
+                  { label: '⚡ Battery Monitor', prompt: 'Hardware battery status monitor' },
+                  { label: '🪙 Bitcoin Oracle', prompt: 'Bitcoin live USD price index' },
+                  { label: '💧 Water Counter', prompt: 'Water intake tally counter with 8 cups goal' },
+                  { label: '📰 Tech News', prompt: 'Top tech news feed from Hacker News' },
+                  { label: '📝 Sprint Memo', prompt: 'Sprint planning sticky note for Monday' },
+                ].map((pill) => (
+                  <TouchableOpacity
+                    key={pill.label}
+                    activeOpacity={0.75}
+                    onPress={() => handleAiMagicFill(pill.prompt)}
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 3.5,
+                      borderRadius: radius.full,
+                      backgroundColor: pandraColors.surfaceElevated,
+                      borderWidth: 1,
+                      borderColor: pandraColors.border,
+                    }}
+                  >
+                    <Text fontFamily={fonts.bodyMedium} fontSize={10.5} color={pandraColors.textSecondary}>
+                      {pill.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </YStack>
+
+            { }
             <Text fontFamily={fonts.bodyMedium} fontSize={12} color={pandraColors.textSecondary} marginBottom={8}>
               Widget Type
             </Text>
@@ -636,7 +833,7 @@ export function CustomWidgetBuilderModal({
               </XStack>
             </ScrollView>
 
-            {/* SIZING & LAYOUT SELECTOR */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.md}
@@ -697,7 +894,7 @@ export function CustomWidgetBuilderModal({
               </XStack>
             </YStack>
 
-            {/* Category-Specific Configuration Form */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.md}
@@ -716,10 +913,10 @@ export function CustomWidgetBuilderModal({
                 {activeCategory === 'static' && 'Metric parameters'}
               </Text>
 
-              {/* 1. PHOTO CONFIG */}
+              { }
               {activeCategory === 'photo' && (
                 <YStack gap={10}>
-                  {/* Pick from Camera Roll */}
+                  { }
                   <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={handlePickImage}
@@ -759,7 +956,7 @@ export function CustomWidgetBuilderModal({
                     />
                   </YStack>
 
-                  {/* Preset Wallpapers */}
+                  { }
                   <YStack gap={4}>
                     <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                       Curated wallpapers
@@ -808,7 +1005,7 @@ export function CustomWidgetBuilderModal({
                 </YStack>
               )}
 
-              {/* 2. WEATHER CONFIG */}
+              { }
               {activeCategory === 'weather' && (
                 <YStack gap={10}>
                   <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
@@ -870,7 +1067,7 @@ export function CustomWidgetBuilderModal({
                 </YStack>
               )}
 
-              {/* 3. BATTERY CONFIG */}
+              { }
               {activeCategory === 'battery' && (
                 <YStack gap={10}>
                   <Text fontFamily={fonts.body} fontSize={11} color={pandraColors.textSecondary}>
@@ -919,7 +1116,7 @@ export function CustomWidgetBuilderModal({
                 </YStack>
               )}
 
-              {/* 4. NEWS CONFIG */}
+              { }
               {activeCategory === 'news' && (
                 <YStack gap={10}>
                   <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
@@ -969,7 +1166,7 @@ export function CustomWidgetBuilderModal({
                 </YStack>
               )}
 
-              {/* 5. NOTE CONFIG */}
+              { }
               {activeCategory === 'note' && (
                 <YStack gap={10}>
                   <YStack gap={4}>
@@ -1013,7 +1210,7 @@ export function CustomWidgetBuilderModal({
                 </YStack>
               )}
 
-              {/* 6. COUNTER CONFIG */}
+              { }
               {activeCategory === 'counter' && (
                 <YStack gap={10}>
                   <XStack gap={10}>
@@ -1057,7 +1254,7 @@ export function CustomWidgetBuilderModal({
                 </YStack>
               )}
 
-              {/* 7. API CONFIG */}
+              { }
               {activeCategory === 'api' && (
                 <YStack gap={10}>
                   <YStack gap={4}>
@@ -1136,7 +1333,7 @@ export function CustomWidgetBuilderModal({
                 </YStack>
               )}
 
-              {/* 8. STATIC METRIC CONFIG */}
+              { }
               {activeCategory === 'static' && (
                 <YStack gap={10}>
                   <XStack gap={10}>
@@ -1182,7 +1379,7 @@ export function CustomWidgetBuilderModal({
               )}
             </YStack>
 
-            {/* PERFORMANCE TREND DELTA CONFIG */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.md}
@@ -1261,7 +1458,7 @@ export function CustomWidgetBuilderModal({
               )}
             </YStack>
 
-            {/* General Appearance (Title, Subtitle, Color, Icon, Card Style, Sparklines) */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.md}
@@ -1309,7 +1506,7 @@ export function CustomWidgetBuilderModal({
                 </YStack>
               </XStack>
 
-              {/* Color Picker */}
+              { }
               <YStack gap={4}>
                 <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                   Accent color
@@ -1340,7 +1537,7 @@ export function CustomWidgetBuilderModal({
                 </XStack>
               </YStack>
 
-              {/* Sparkline Selector */}
+              { }
               <YStack gap={4}>
                 <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                   Sparkline Pattern
@@ -1372,7 +1569,7 @@ export function CustomWidgetBuilderModal({
                 </XStack>
               </YStack>
 
-              {/* Icon Picker */}
+              { }
               <YStack gap={4}>
                 <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                   Icon
@@ -1402,7 +1599,7 @@ export function CustomWidgetBuilderModal({
               </YStack>
             </YStack>
 
-            {/* Live Preview */}
+            { }
             <Text fontFamily={fonts.bodyMedium} fontSize={12} color={pandraColors.textSecondary} marginBottom={8}>
               Live preview ({selectedSize === 'wide' ? '2x1 Banner' : '1x1 Square'})
             </Text>
@@ -1415,7 +1612,7 @@ export function CustomWidgetBuilderModal({
               />
             </View>
 
-            {/* Save Button */}
+            { }
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={handleCreateOrSaveWidget}

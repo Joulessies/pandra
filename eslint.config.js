@@ -18,6 +18,7 @@ module.exports = defineConfig([
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/globals': 'off',
       'react-hooks/purity': 'off',
+      'react-hooks/immutability': 'off',
     },
   },
 ]);

@@ -94,7 +94,7 @@ export function MiniSparkline({
                     </SvgGradient>
                 </Defs>
 
-                {/* Subtle baseline guide */}
+                { }
                 <Line
                     x1="0"
                     y1="21.5"
@@ -105,13 +105,13 @@ export function MiniSparkline({
                     strokeDasharray="3 3"
                 />
 
-                {/* Smooth Area Gradient Fill */}
+                { }
                 <Path
                     d={`${profile.path} L 120 22 L 0 22 Z`}
                     fill={`url(#${gradientId})`}
                 />
 
-                {/* Primary Metric Trend Stroke */}
+                { }
                 <Path
                     d={profile.path}
                     fill="none"
@@ -121,7 +121,7 @@ export function MiniSparkline({
                     strokeLinejoin="round"
                 />
 
-                {/* Live Data Cursor Dot */}
+                { }
                 <Circle
                     cx={120}
                     cy={profile.endY}
@@ -167,7 +167,6 @@ export function WidgetTile({
 }: WidgetTileProps) {
     const isInk = tone === 'ink';
 
-    // Derive properties from widget if supplied
     const title = widget ? widget.title : propTitle;
     const subtitle = widget ? widget.subtitle : propSubtitle;
     const badge = widget ? widget.badge : propBadge;
@@ -180,7 +179,6 @@ export function WidgetTile({
     const sparkPattern = widget?.sparklinePattern || propSparklinePattern;
     const cardStyle = widget?.cardStyle || 'solid';
 
-    // Determine card background
     let bgStyle: any = { backgroundColor: isInk ? pandraColors.cardBg : '#FFFFFF' };
     if (cardStyle === 'glass') {
         bgStyle = { backgroundColor: pandraColors.surfaceGlass };
@@ -202,28 +200,116 @@ export function WidgetTile({
             {...shadows.card}
             {...props}
         >
-            {/* Header */}
-            {(title || propIcon || badge) && (
-                <XStack
-                    alignItems="center"
-                    justifyContent="space-between"
-                    marginBottom={6}
-                >
-                    <XStack alignItems="center" gap={8} flex={1}>
-                        {propIcon && (
+            { }
+            {isWide ? (
+                (title || propIcon || badge) && (
+                    <XStack
+                        alignItems="center"
+                        justifyContent="space-between"
+                        marginBottom={6}
+                    >
+                        <XStack alignItems="center" gap={8} flex={1}>
+                            {propIcon && (
+                                <View
+                                    width={28}
+                                    height={28}
+                                    borderRadius={radius.xs}
+                                    backgroundColor={pandraColors.surfaceElevated}
+                                    alignItems="center"
+                                    justifyContent="center"
+                                >
+                                    {propIcon}
+                                </View>
+                            )}
+                            {title && (
+                                <YStack flex={1}>
+                                    <XStack alignItems="center" gap={5}>
+                                        {(isLive || widgetType === 'api_fetcher') && (
+                                            <View
+                                                width={5}
+                                                height={5}
+                                                borderRadius={2.5}
+                                                backgroundColor={pandraColors.accentGreen}
+                                            />
+                                        )}
+                                        <Text
+                                            fontFamily={fonts.bodyMedium}
+                                            fontSize={13}
+                                            color={pandraColors.text}
+                                            numberOfLines={1}
+                                        >
+                                            {title}
+                                        </Text>
+                                    </XStack>
+                                    {subtitle && (
+                                        <Text
+                                            fontFamily={fonts.body}
+                                            fontSize={11}
+                                            color={pandraColors.textMuted}
+                                            numberOfLines={1}
+                                        >
+                                            {subtitle}
+                                        </Text>
+                                    )}
+                                </YStack>
+                            )}
+                        </XStack>
+
+                        {badge && (
                             <View
-                                width={28}
-                                height={28}
+                                paddingHorizontal={6}
+                                paddingVertical={2}
                                 borderRadius={radius.xs}
-                                backgroundColor={pandraColors.surfaceElevated}
-                                alignItems="center"
-                                justifyContent="center"
+                                backgroundColor="rgba(255, 255, 255, 0.05)"
                             >
-                                {propIcon}
+                                <Text
+                                    fontFamily={fonts.bodyMedium}
+                                    fontSize={9.5}
+                                    color={badgeColor || pandraColors.textMuted}
+                                >
+                                    {badge}
+                                </Text>
                             </View>
                         )}
+                    </XStack>
+                )
+            ) : (
+                (title || propIcon || badge) && (
+                    <YStack marginBottom={4}>
+                        <XStack alignItems="center" justifyContent="space-between" marginBottom={propIcon ? 5 : 2}>
+                            {propIcon ? (
+                                <View
+                                    width={26}
+                                    height={26}
+                                    borderRadius={radius.xs}
+                                    backgroundColor={pandraColors.surfaceElevated}
+                                    alignItems="center"
+                                    justifyContent="center"
+                                >
+                                    {propIcon}
+                                </View>
+                            ) : (
+                                <View />
+                            )}
+                            {badge && (
+                                <View
+                                    paddingHorizontal={6}
+                                    paddingVertical={2}
+                                    borderRadius={radius.xs}
+                                    backgroundColor="rgba(255, 255, 255, 0.05)"
+                                >
+                                    <Text
+                                        fontFamily={fonts.bodyMedium}
+                                        fontSize={9.5}
+                                        color={badgeColor || pandraColors.textMuted}
+                                    >
+                                        {badge}
+                                    </Text>
+                                </View>
+                            )}
+                        </XStack>
                         {title && (
-                            <YStack flex={1}>
+                            <YStack gap={1}>
                                 <XStack alignItems="center" gap={5}>
                                     {(isLive || widgetType === 'api_fetcher') && (
                                         <View
@@ -235,7 +321,7 @@ export function WidgetTile({
                                     )}
                                     <Text
                                         fontFamily={fonts.bodyMedium}
-                                        fontSize={13}
+                                        fontSize={12.5}
                                         color={pandraColors.text}
                                         numberOfLines={1}
                                     >
@@ -245,7 +331,7 @@ export function WidgetTile({
                                 {subtitle && (
                                     <Text
                                         fontFamily={fonts.body}
-                                        fontSize={11}
+                                        fontSize={10.5}
                                         color={pandraColors.textMuted}
                                         numberOfLines={1}
                                     >
@@ -254,28 +340,11 @@ export function WidgetTile({
                                 )}
                             </YStack>
                         )}
-                    </XStack>
-
-                    {badge && (
-                        <View
-                            paddingHorizontal={6}
-                            paddingVertical={2}
-                            borderRadius={radius.xs}
-                            backgroundColor="rgba(255, 255, 255, 0.05)"
-                        >
-                            <Text
-                                fontFamily={fonts.bodyMedium}
-                                fontSize={9.5}
-                                color={badgeColor || pandraColors.textMuted}
-                            >
-                                {badge}
-                            </Text>
-                        </View>
-                    )}
-                </XStack>
+                    </YStack>
+                )
             )}
 
-            {/* 1. PHOTO WIDGET */}
+            { }
             {widgetType === 'photo' && widget?.photoConfig && (
                 <YStack marginTop={4} flex={1} gap={6}>
                     <View
@@ -300,7 +369,7 @@ export function WidgetTile({
                 </YStack>
             )}
 
-            {/* 2. WEATHER WIDGET */}
+            { }
             {widgetType === 'weather' && widget?.weatherConfig && (
                 <YStack marginTop={4} gap={4}>
                     <XStack alignItems="center" justifyContent="space-between">
@@ -346,7 +415,7 @@ export function WidgetTile({
                 </YStack>
             )}
 
-            {/* 3. BATTERY WIDGET */}
+            { }
             {widgetType === 'battery' && widget?.batteryConfig && (
                 <YStack marginTop={4} gap={6}>
                     <XStack alignItems="center" justifyContent="space-between">
@@ -365,7 +434,7 @@ export function WidgetTile({
                         </XStack>
                     </XStack>
 
-                    {/* Progress Gauge Bar */}
+                    { }
                     <View
                         width="100%"
                         height={6}
@@ -383,7 +452,7 @@ export function WidgetTile({
                 </YStack>
             )}
 
-            {/* 4. NEWS WIDGET */}
+            { }
             {widgetType === 'news' && widget?.newsConfig && (
                 <TouchableOpacity
                     activeOpacity={0.8}
@@ -413,7 +482,7 @@ export function WidgetTile({
                 </TouchableOpacity>
             )}
 
-            {/* 5. STICKY NOTE WIDGET */}
+            { }
             {widgetType === 'note' && widget?.noteConfig && (
                 <YStack marginTop={4} flex={1} justifyContent="space-between" gap={4}>
                     <Text
@@ -441,7 +510,7 @@ export function WidgetTile({
                 </YStack>
             )}
 
-            {/* 6. COUNTER WIDGET */}
+            { }
             {widgetType === 'counter' && widget?.counterConfig && (
                 <XStack marginTop={4} alignItems="center" justifyContent="space-between">
                     <YStack gap={2}>
@@ -487,7 +556,7 @@ export function WidgetTile({
                 </XStack>
             )}
 
-            {/* 7. STANDARD METRIC & LABEL WITH OPTIONAL TREND (Fallback for static / api_fetcher) */}
+            { }
             {(!widgetType || widgetType === 'static' || widgetType === 'api_fetcher') && metric && (
                 <YStack marginTop={4} marginBottom={2}>
                     <XStack alignItems="center" justifyContent="space-between">
@@ -500,7 +569,7 @@ export function WidgetTile({
                             {metric}
                         </Text>
 
-                        {/* Trend Delta Chip */}
+                        { }
                         {trend && (
                             <XStack
                                 alignItems="center"
@@ -539,10 +608,10 @@ export function WidgetTile({
                 </YStack>
             )}
 
-            {/* Custom Children Content */}
+            { }
             {children && <YStack flex={1}>{children}</YStack>}
 
-            {/* Sparkline (ONLY for metric / telemetry / API widgets with an active sparkline pattern) */}
+            { }
             {sparkPattern !== 'none' &&
                 (!widgetType || widgetType === 'static' || widgetType === 'api_fetcher') && (
                 <MiniSparkline

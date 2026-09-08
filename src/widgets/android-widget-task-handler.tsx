@@ -13,7 +13,7 @@ import {
 const STORAGE_KEY_PAYLOAD_PREFIX = 'pandra_native_widget_payload_';
 
 const DEFAULT_DATA: PandraWidgetData = {
-  title: 'Pandra Deck',
+  title: 'Pandra',
   subtitle: 'Tap to sync metrics',
   metric: '--',
   metricLabel: 'PANDRA TELEMETRY',

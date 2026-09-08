@@ -44,7 +44,6 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
   const [isProcessingPurchase, setIsProcessingPurchase] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  // Extract RevenueCat packages if available
   const currentOffering = offerings?.current;
   const annualPackage = currentOffering?.annual || currentOffering?.availablePackages.find((p) => p.packageType === 'ANNUAL');
   const monthlyPackage = currentOffering?.monthly || currentOffering?.availablePackages.find((p) => p.packageType === 'MONTHLY');
@@ -65,7 +64,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
           ]);
         }
       } else {
-        // Fallback simulated purchase for sandbox/hackathon preview
+        
         simulateUnlockPro?.(true);
         Alert.alert(
           'Pro unlocked',
@@ -138,7 +137,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
           paddingBottom={bottomPadding}
           paddingHorizontal={20}
         >
-          {/* Drag Handle */}
+          { }
           <View
             width={36}
             height={4}
@@ -148,7 +147,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
             marginBottom={16}
           />
 
-          {/* Close Button */}
+          { }
           <XStack justifyContent="flex-end" marginBottom={4}>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -168,7 +167,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
           </XStack>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Header */}
+            { }
             <YStack alignItems="center" marginBottom={20}>
               <Text
                 fontFamily={fonts.display}
@@ -187,11 +186,11 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
                 marginTop={6}
                 paddingHorizontal={16}
               >
-                {featureContext || 'Unlimited widgets, AI compiler, and cloud sync for your telemetry deck.'}
+                {featureContext || 'Unlimited widgets, AI generation, and cloud sync.'}
               </Text>
             </YStack>
 
-            {/* Features */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.md}
@@ -239,7 +238,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
               ))}
             </YStack>
 
-            {/* Plan Selector or Admin Banner */}
+            { }
             {isAdmin ? (
               <YStack
                 backgroundColor={pandraColors.surfaceElevated}
@@ -286,7 +285,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
                 </Text>
 
                 <XStack gap={10} marginBottom={18}>
-                  {/* Annual */}
+                  { }
                   <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setSelectedPlan('annual')}
@@ -344,7 +343,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Monthly */}
+                  { }
                   <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setSelectedPlan('monthly')}
@@ -388,7 +387,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
                   </TouchableOpacity>
                 </XStack>
 
-                {/* CTA Button */}
+                { }
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={handlePurchase}
@@ -416,7 +415,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
               </>
             )}
 
-            {/* Promo Code */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.sm}
@@ -469,7 +468,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
               </XStack>
             </YStack>
 
-            {/* Footer Links */}
+            { }
             <XStack justifyContent="center" alignItems="center" gap={16} marginBottom={8}>
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -486,7 +485,7 @@ export function PaywallModal({ isOpen, onClose, featureContext }: PaywallModalPr
 
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => Linking.openURL('https://revenuecat.com/terms')}
+                onPress={() => Linking.openURL('https:
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text fontFamily={fonts.body} fontSize={11} color={pandraColors.textMuted}>

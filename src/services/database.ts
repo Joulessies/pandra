@@ -4,7 +4,6 @@ import { CustomWidget } from '@/types/widget';
 let sqliteDbInstance: any = null;
 let isSqliteDisabled = false;
 
-// Dynamically and safely initialize expo-sqlite
 async function getDatabase(): Promise<any> {
   if (Platform.OS === 'web' || isSqliteDisabled) return null;
   if (sqliteDbInstance) return sqliteDbInstance;
@@ -20,7 +19,7 @@ async function getDatabase(): Promise<any> {
       }
     }
   } catch {
-    // Graceful fallback to AsyncStorage / SecureStore
+    
     console.log('[SQLite] Native database not available in this environment. Using multi-tier persistent storage.');
     isSqliteDisabled = true;
     sqliteDbInstance = null;
@@ -28,7 +27,6 @@ async function getDatabase(): Promise<any> {
   return null;
 }
 
-// 1. Schema Initialization
 async function initTables(db: any): Promise<boolean> {
   try {
     await db.execAsync(`
@@ -72,7 +70,6 @@ async function initTables(db: any): Promise<boolean> {
   }
 }
 
-// 2. Fetch User Widgets from SQLite
 export async function getDbWidgets(userId: string = 'default_builder'): Promise<CustomWidget[]> {
   if (isSqliteDisabled) return [];
   try {
@@ -108,13 +105,12 @@ export async function getDbWidgets(userId: string = 'default_builder'): Promise<
       });
     }
   } catch {
-    // Non-blocking fallback
+    
     isSqliteDisabled = true;
   }
   return [];
 }
 
-// 3. Upsert a Widget in SQLite
 export async function saveDbWidget(widget: CustomWidget, userId: string = 'default_builder'): Promise<void> {
   if (isSqliteDisabled || !widget || !widget.id) return;
   try {
@@ -168,12 +164,11 @@ export async function saveDbWidget(widget: CustomWidget, userId: string = 'defau
       ]
     );
   } catch {
-    // Non-blocking fallback to AsyncStorage
+    
     isSqliteDisabled = true;
   }
 }
 
-// 4. Batch Save All Widgets for User
 export async function saveAllDbWidgets(widgets: CustomWidget[], userId: string = 'default_builder'): Promise<void> {
   if (isSqliteDisabled || !Array.isArray(widgets)) return;
   try {
@@ -188,7 +183,6 @@ export async function saveAllDbWidgets(widgets: CustomWidget[], userId: string =
   }
 }
 
-// 5. Delete a Widget from SQLite
 export async function deleteDbWidget(widgetId: string, userId: string = 'default_builder'): Promise<void> {
   if (isSqliteDisabled) return;
   try {
@@ -204,7 +198,6 @@ export async function deleteDbWidget(widgetId: string, userId: string = 'default
   }
 }
 
-// 6. Log Telemetry / API Polls into Database
 export async function logDbTelemetry(
   widgetId: string,
   metricValue: string,
@@ -227,7 +220,6 @@ export async function logDbTelemetry(
   }
 }
 
-// 7. Get Telemetry History for a Widget
 export async function getDbTelemetryHistory(widgetId: string, limit: number = 20): Promise<any[]> {
   if (isSqliteDisabled) return [];
   try {
@@ -244,7 +236,6 @@ export async function getDbTelemetryHistory(widgetId: string, limit: number = 20
   }
 }
 
-// 8. Fetch or Initialize Deck in SQLite (Zero Mock Data)
 export async function seedDbIfEmpty(userId: string = 'default_builder'): Promise<CustomWidget[]> {
   if (isSqliteDisabled) return [];
   try {

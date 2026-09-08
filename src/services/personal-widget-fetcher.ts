@@ -1,7 +1,6 @@
 import { WeatherWidgetConfig, NewsWidgetConfig, BatteryWidgetConfig } from '@/types/widget';
 import { Platform } from 'react-native';
 
-// Preset popular cities for instant weather setup
 export const PRESET_CITIES: { name: string; lat: number; lon: number; country: string }[] = [
   { name: 'San Francisco', lat: 37.7749, lon: -122.4194, country: 'USA' },
   { name: 'New York', lat: 40.7128, lon: -74.0060, country: 'USA' },
@@ -26,19 +25,15 @@ export function decodeWmoWeatherCode(code: number): { label: string; icon: 'sun'
   return { label: 'Partly Cloudy', icon: 'cloud' };
 }
 
-/**
- * Geocode any city name into latitude / longitude using Open-Meteo free geocoding API
- */
 export async function geocodeCity(cityName: string): Promise<{ name: string; lat: number; lon: number; country: string } | null> {
   const clean = cityName.trim();
   if (!clean) return null;
 
-  // Check presets first
   const match = PRESET_CITIES.find((c) => c.name.toLowerCase() === clean.toLowerCase());
   if (match) return match;
 
   try {
-    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(clean)}&count=1&language=en&format=json`;
+    const url = `https:
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
@@ -57,9 +52,6 @@ export async function geocodeCity(cityName: string): Promise<{ name: string; lat
   return null;
 }
 
-/**
- * Fetch live weather from free, reliable Open-Meteo REST API
- */
 export async function fetchLiveWeatherData(
   lat: number,
   lon: number,
@@ -67,7 +59,7 @@ export async function fetchLiveWeatherData(
   unit: 'celsius' | 'fahrenheit' = 'celsius'
 ): Promise<WeatherWidgetConfig> {
   const tempUnitParam = unit === 'fahrenheit' ? '&temperature_unit=fahrenheit' : '';
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto${tempUnitParam}`;
+  const url = `https:
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -98,7 +90,7 @@ export async function fetchLiveWeatherData(
       lowTemp: low,
       lastFetched: Date.now(),
     };
-  } catch (err) {
+  } catch {
     clearTimeout(timeoutId);
     const unitSymbol = unit === 'fahrenheit' ? '°F' : '°C';
     return {
@@ -116,30 +108,27 @@ export async function fetchLiveWeatherData(
   }
 }
 
-/**
- * Fetch top news / dev reports
- */
 export async function fetchLiveNewsData(
   source: 'hackernews' | 'devto' | 'techcrunch' | 'ai'
 ): Promise<NewsWidgetConfig> {
   try {
     if (source === 'hackernews') {
-      const topIdsRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+      const topIdsRes = await fetch('https:
       const topIds = await topIdsRes.json();
       if (Array.isArray(topIds) && topIds.length > 0) {
-        const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${topIds[0]}.json`);
+        const itemRes = await fetch(`https:
         const item = await itemRes.json();
         return {
           source: 'hackernews',
           sourceLabel: 'Hacker News',
           headline: item?.title || 'Open source telemetry engine released',
-          url: item?.url || `https://news.ycombinator.com/item?id=${item?.id}`,
+          url: item?.url || `https:
           timeAgo: 'Top story',
           lastFetched: Date.now(),
         };
       }
     } else if (source === 'devto') {
-      const res = await fetch('https://dev.to/api/articles?per_page=3&top=1');
+      const res = await fetch('https:
       const articles = await res.json();
       if (Array.isArray(articles) && articles.length > 0) {
         const topArticle = articles[0];
@@ -157,7 +146,7 @@ export async function fetchLiveNewsData(
         source: 'ai',
         sourceLabel: 'AI Telemetry',
         headline: 'Open-weights reasoning models cross 90% benchmark on edge devices',
-        url: 'https://huggingface.co',
+        url: 'https:
         timeAgo: 'Trending',
         lastFetched: Date.now(),
       };
@@ -166,7 +155,7 @@ export async function fetchLiveNewsData(
         source: 'techcrunch',
         sourceLabel: 'Tech Radar',
         headline: 'Next-generation cloud architectures adopt Rust for serverless micro-runtimes',
-        url: 'https://techcrunch.com',
+        url: 'https:
         timeAgo: 'Live',
         lastFetched: Date.now(),
       };
@@ -179,7 +168,7 @@ export async function fetchLiveNewsData(
     source,
     sourceLabel: source === 'hackernews' ? 'Hacker News' : source === 'devto' ? 'Dev.to' : 'Tech Radar',
     headline: 'Modern developer toolchains report 40% latency reduction with edge telemetry',
-    url: 'https://news.ycombinator.com',
+    url: 'https:
     timeAgo: 'Just now',
     lastFetched: Date.now(),
   };
@@ -192,11 +181,8 @@ try {
   ExpoBattery = null;
 }
 
-/**
- * Fetch battery telemetry from real hardware battery APIs (Android / iOS / Web)
- */
 export async function fetchLiveBatteryData(): Promise<BatteryWidgetConfig> {
-  // 1. Real Hardware Battery (Android & iOS)
+  
   try {
     if (!ExpoBattery) {
       try {
@@ -211,7 +197,7 @@ export async function fetchLiveBatteryData(): Promise<BatteryWidgetConfig> {
       let isCharging = false;
       if (ExpoBattery.getBatteryStateAsync) {
         const state = await ExpoBattery.getBatteryStateAsync();
-        isCharging = state === 2 || state === 3; // CHARGING or FULL
+        isCharging = state === 2 || state === 3; 
       }
 
       const level = rawLevel >= 0 ? Math.round(rawLevel * 100) : 85;
@@ -225,7 +211,6 @@ export async function fetchLiveBatteryData(): Promise<BatteryWidgetConfig> {
     console.warn('[ExpoBattery] Error reading hardware battery:', err);
   }
 
-  // 2. Web Browser Battery API
   if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'getBattery' in navigator) {
     try {
       const battery: any = await (navigator as any).getBattery();
@@ -236,11 +221,10 @@ export async function fetchLiveBatteryData(): Promise<BatteryWidgetConfig> {
         customLabel: battery.charging ? '⚡ Charging AC' : `Battery (${level}%)`,
       };
     } catch {
-      // Fallback
+      
     }
   }
 
-  // 3. Fallback
   return {
     levelPercent: 88,
     isCharging: false,
@@ -248,13 +232,10 @@ export async function fetchLiveBatteryData(): Promise<BatteryWidgetConfig> {
   };
 }
 
-/**
- * Measure real-world HTTPS round-trip network ping latency
- */
 export async function measureNetworkLatency(): Promise<{ latencyMs: number; rps: number }> {
   const start = performance.now();
   try {
-    await fetch('https://cloudflare.com/cdn-cgi/trace', {
+    await fetch('https:
       method: 'GET',
       cache: 'no-cache',
     });

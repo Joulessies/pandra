@@ -41,7 +41,7 @@ export function FirstLaunchModal({
           paddingHorizontal={24}
           maxHeight="90%"
         >
-          {/* Drag Handle */}
+          { }
           <View
             width={36}
             height={4}
@@ -52,19 +52,19 @@ export function FirstLaunchModal({
           />
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Mascot & Header */}
+            { }
             <XStack alignItems="center" gap={14} marginBottom={14}>
               <YStack flex={1}>
                 <Text fontFamily={fonts.display} fontSize={18} color={pandraColors.text}>
                   Welcome, {userName || 'Builder'}!
                 </Text>
                 <Text fontFamily={fonts.body} fontSize={12} color={pandraColors.textSecondary}>
-                  Your personal command deck has been calibrated for {userRoleTitle}.
+                  Your AI widget maker is ready for {userRoleTitle}.
                 </Text>
               </YStack>
             </XStack>
 
-            {/* Complimentary 7-Day Pro Explorer Card */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.md}
@@ -98,13 +98,13 @@ export function FirstLaunchModal({
               </Text>
             </YStack>
 
-            {/* Quick Micro-Tour Tips */}
+            { }
             <Text fontFamily={fonts.bodySemibold} fontSize={13} color={pandraColors.text} marginBottom={10}>
               Quick Deck Controls
             </Text>
 
             <YStack gap={10} marginBottom={20}>
-              {/* Tip 1 */}
+              { }
               <XStack
                 backgroundColor={pandraColors.bg}
                 borderRadius={radius.sm}
@@ -132,7 +132,7 @@ export function FirstLaunchModal({
                 </YStack>
               </XStack>
 
-              {/* Tip 2 */}
+              { }
               <XStack
                 backgroundColor={pandraColors.bg}
                 borderRadius={radius.sm}
@@ -160,7 +160,7 @@ export function FirstLaunchModal({
                 </YStack>
               </XStack>
 
-              {/* Tip 3 */}
+              { }
               <XStack
                 backgroundColor={pandraColors.bg}
                 borderRadius={radius.sm}
@@ -189,7 +189,7 @@ export function FirstLaunchModal({
               </XStack>
             </YStack>
 
-            {/* Launch CTA */}
+            { }
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={onGetStarted}
@@ -205,7 +205,7 @@ export function FirstLaunchModal({
               }}
             >
               <Text fontFamily={fonts.bodySemibold} fontSize={14} color="#FFF">
-                Open Command Deck
+                Start Making Widgets
               </Text>
               <ArrowRight size={15} color="#FFF" />
             </TouchableOpacity>

@@ -1,5 +1,5 @@
 export const pandraColors = {
-    // Panda White & Sage Light Theme (inspired by logo)
+    
     bg: '#FAF8F5',
     bgSubtle: '#F5F2EE',
     bgCanvas: '#FAF8F5',
@@ -12,7 +12,6 @@ export const pandraColors = {
     borderHighlight: 'rgba(44, 51, 47, 0.16)',
     borderGlow: 'rgba(146, 164, 152, 0.28)',
 
-    // Accent Palette — Sage Green Brand Accent
     primary: '#7A9182',
     primaryLight: '#92A498',
     primaryDark: '#637568',
@@ -34,20 +33,17 @@ export const pandraColors = {
     accentPurpleGlow: 'rgba(124, 58, 237, 0.08)',
     accentPink: '#DB2777',
 
-    // Typography — Charcoal & Forest Tones (panda dark patches)
     text: '#2C332F',
     textSecondary: '#5C665F',
     textMuted: '#8A9490',
     textDim: '#A8B0AB',
     textDisabled: '#C5CBC7',
 
-    // Card & Widget
     cardBg: '#FFFFFF',
     cardBorder: 'rgba(44, 51, 47, 0.10)',
     dotHandle: '#C5CBC7',
     dotHandleActive: '#7A9182',
 
-    // Status
     error: '#DC2626',
     errorBg: 'rgba(220, 38, 38, 0.08)',
     success: '#059669',

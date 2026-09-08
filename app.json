@@ -49,8 +49,8 @@
           "widgets": [
             {
               "name": "PandraWidget",
-              "displayName": "Pandra Telemetry",
-              "description": "Live metrics from your Pandra command deck",
+              "displayName": "Pandra Widget",
+              "description": "AI-crafted widgets from Pandra",
               "supportedFamilies": [
                 "systemSmall",
                 "systemMedium",
@@ -66,8 +66,8 @@
           "widgets": [
             {
               "name": "PandraSmallWidget",
-              "label": "Pandra Telemetry",
-              "description": "Live metrics from your Pandra command deck",
+              "label": "Pandra Widget",
+              "description": "AI-crafted widgets from Pandra",
               "minWidth": "110dp",
               "minHeight": "110dp",
               "targetCellWidth": 2,
@@ -78,8 +78,8 @@
             },
             {
               "name": "PandraWideWidget",
-              "label": "Pandra Telemetry (Wide)",
-              "description": "Expanded live metrics from your Pandra command deck",
+              "label": "Pandra Widget (Wide)",
+              "description": "AI-crafted wide widget from Pandra",
               "minWidth": "250dp",
               "minHeight": "110dp",
               "targetCellWidth": 4,
@@ -91,7 +91,8 @@
           ]
         }
       ],
-      "./plugins/with-work-runtime-fix.js"
+      "./plugins/with-work-runtime-fix.js",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

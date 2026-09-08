@@ -36,26 +36,26 @@ export type WidgetCardStyle = 'solid' | 'glass' | 'gradient';
 export type SparklineStyle = 'default' | 'growth' | 'pulse' | 'volatile' | 'none';
 
 export interface WidgetTrend {
-  value: string;         // e.g. "+12.4%", "-3.2%"
-  isPositive: boolean;   // green if positive, red if negative
+  value: string;         
+  isPositive: boolean;   
 }
 
 export interface ApiWidgetConfig {
-  endpointUrl: string;       // e.g. https://api.github.com/repos/expo/expo
-  jsonPath: string;          // e.g. "stargazers_count" or "bpi.USD.rate"
-  pollIntervalSec: number;   // e.g. 60 seconds
-  unit?: string;             // e.g. "Stars", "USD", "ms"
-  lastFetched?: number;      // timestamp
+  endpointUrl: string;       
+  jsonPath: string;          
+  pollIntervalSec: number;   
+  unit?: string;             
+  lastFetched?: number;      
   lastStatus?: 'idle' | 'loading' | 'success' | 'error';
   lastError?: string;
 }
 
 export interface WeatherWidgetConfig {
-  city: string;              // e.g. "Tokyo", "San Francisco"
+  city: string;              
   latitude: number;
   longitude: number;
-  temperature?: string;      // e.g. "22°C"
-  condition?: string;        // e.g. "Sunny", "Rainy", "Partly Cloudy"
+  temperature?: string;      
+  condition?: string;        
   weatherCode?: number;
   unit?: 'celsius' | 'fahrenheit';
   highTemp?: string;
@@ -64,8 +64,8 @@ export interface WeatherWidgetConfig {
 }
 
 export interface PhotoWidgetConfig {
-  imageUrl: string;          // Web URL or local image URI
-  caption?: string;          // Optional overlay caption
+  imageUrl: string;          
+  caption?: string;          
   aspectRatio?: 'square' | 'wide' | 'tall';
 }
 
@@ -79,7 +79,7 @@ export interface NewsWidgetConfig {
 }
 
 export interface BatteryWidgetConfig {
-  levelPercent?: number;     // 0 - 100
+  levelPercent?: number;     
   isCharging?: boolean;
   customLabel?: string;
 }
@@ -97,9 +97,9 @@ export interface CounterWidgetConfig {
 
 export interface WidgetAlertRule {
   id: string;
-  condition: 'gt' | 'lt' | 'eq';      // greater than, less than, equals
+  condition: 'gt' | 'lt' | 'eq';      
   threshold: number;
-  metricKey?: string;                 // e.g. "temperature", "btc_price", "battery_level"
+  metricKey?: string;                 
   enabled: boolean;
   notifyMessage?: string;
   lastTriggered?: number;
@@ -116,10 +116,10 @@ export interface CustomWidget {
   color: string;
   iconType: WidgetIconType;
   type: WidgetType;
-  size?: WidgetSize;                   // 'standard' (1x1) or 'wide' (2x1)
-  cardStyle?: WidgetCardStyle;         // 'solid', 'glass', 'gradient'
-  sparklinePattern?: SparklineStyle;   // 'default', 'growth', 'pulse', 'volatile', 'none'
-  trend?: WidgetTrend;                 // Optional +12.4% trend chip
+  size?: WidgetSize;                   
+  cardStyle?: WidgetCardStyle;         
+  sparklinePattern?: SparklineStyle;   
+  trend?: WidgetTrend;                 
   apiConfig?: ApiWidgetConfig;
   weatherConfig?: WeatherWidgetConfig;
   photoConfig?: PhotoWidgetConfig;
@@ -127,7 +127,7 @@ export interface CustomWidget {
   batteryConfig?: BatteryWidgetConfig;
   noteConfig?: NoteWidgetConfig;
   counterConfig?: CounterWidgetConfig;
-  alertRules?: WidgetAlertRule[];      // Smart automation alerts
+  alertRules?: WidgetAlertRule[];      
   tone?: 'ink' | 'paper';
   isProExclusive?: boolean;
 }
@@ -135,9 +135,8 @@ export interface CustomWidget {
 export interface DeckWorkspace {
   id: string;
   name: string;
-  icon: string;                        // 'command' | 'lifestyle' | 'crypto' | 'custom'
+  icon: string;                        
   badge?: string;
   widgets: CustomWidget[];
   isCustom?: boolean;
 }
-

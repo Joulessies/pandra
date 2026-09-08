@@ -60,7 +60,6 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
   const insets = useSafeAreaInsets();
   const [selectedTemplate, setSelectedTemplate] = useState<ApiTemplatePreset | null>(API_PRESET_TEMPLATES[0]);
 
-  // Configuration form state
   const [title, setTitle] = useState(API_PRESET_TEMPLATES[0].defaultTitle);
   const [subtitle, setSubtitle] = useState(API_PRESET_TEMPLATES[0].defaultSubtitle);
   const [endpointUrl, setEndpointUrl] = useState(API_PRESET_TEMPLATES[0].endpointUrl);
@@ -70,7 +69,6 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
   const [selectedColor, setSelectedColor] = useState(API_PRESET_TEMPLATES[0].color);
   const [selectedIcon, setSelectedIcon] = useState<WidgetIconType>(API_PRESET_TEMPLATES[0].iconType);
 
-  // Live testing state
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<ApiFetchResult | null>(null);
 
@@ -91,7 +89,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
     setSelectedTemplate(null);
     setTitle('Custom API');
     setSubtitle('Live REST feed');
-    setEndpointUrl('https://api.github.com/repos/facebook/react');
+    setEndpointUrl('https:
     setJsonPath('stargazers_count');
     setMetricLabel('Metric');
     setUnit('');
@@ -190,7 +188,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
           paddingBottom={bottomPadding}
           paddingHorizontal={20}
         >
-          {/* Drag Handle */}
+          { }
           <View
             width={36}
             height={4}
@@ -200,7 +198,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
             marginBottom={14}
           />
 
-          {/* Header */}
+          { }
           <XStack justifyContent="space-between" alignItems="center" marginBottom={14}>
             <YStack>
               <Text fontFamily={fonts.bodySemibold} fontSize={16} color={pandraColors.text}>
@@ -229,7 +227,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
           </XStack>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Template Selector */}
+            { }
             <Text fontFamily={fonts.bodyMedium} fontSize={12} color={pandraColors.textSecondary} marginBottom={8}>
               Template
             </Text>
@@ -292,7 +290,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
               </XStack>
             </ScrollView>
 
-            {/* Endpoint Configuration */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.md}
@@ -365,7 +363,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
                 </YStack>
               </XStack>
 
-              {/* Test Button */}
+              { }
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={handleTestEndpoint}
@@ -393,7 +391,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
                 )}
               </TouchableOpacity>
 
-              {/* Test Result */}
+              { }
               {testResult && (
                 <YStack
                   backgroundColor={pandraColors.bg}
@@ -423,7 +421,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
               )}
             </YStack>
 
-            {/* Tile Appearance */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.md}
@@ -488,7 +486,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
                 />
               </YStack>
 
-              {/* Color Picker */}
+              { }
               <YStack gap={4}>
                 <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                   Color
@@ -519,7 +517,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
                 </XStack>
               </YStack>
 
-              {/* Icon Picker */}
+              { }
               <YStack gap={4}>
                 <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                   Icon
@@ -549,7 +547,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
               </YStack>
             </YStack>
 
-            {/* Preview */}
+            { }
             <Text fontFamily={fonts.bodyMedium} fontSize={12} color={pandraColors.textSecondary} marginBottom={8}>
               Preview
             </Text>
@@ -575,7 +573,7 @@ export function ApiWidgetModal({ isOpen, onClose, onSave }: ApiWidgetModalProps)
               </WidgetTile>
             </View>
 
-            {/* Save Button */}
+            { }
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={handleMountWidget}

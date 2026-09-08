@@ -28,7 +28,7 @@ export const API_PRESET_TEMPLATES: ApiTemplatePreset[] = [
     id: 'github_stars',
     name: 'GitHub Repo Stars',
     description: 'Track real-time stars on any public GitHub repository',
-    endpointUrl: 'https://api.github.com/repos/expo/expo',
+    endpointUrl: 'https:
     jsonPath: 'stargazers_count',
     unit: '★',
     metricLabel: 'EXPO STARS',
@@ -41,7 +41,7 @@ export const API_PRESET_TEMPLATES: ApiTemplatePreset[] = [
     id: 'btc_price',
     name: 'Bitcoin Live Price (USD)',
     description: 'Fetch real-time BTC index rates via Coinbase API',
-    endpointUrl: 'https://api.coinbase.com/v2/prices/spot?currency=USD',
+    endpointUrl: 'https:
     jsonPath: 'data.amount',
     unit: 'USD',
     metricLabel: 'BTC / USD INDEX',
@@ -54,7 +54,7 @@ export const API_PRESET_TEMPLATES: ApiTemplatePreset[] = [
     id: 'weather_temp',
     name: 'Open-Meteo Weather Temp',
     description: 'Live temperature stream via open weather models',
-    endpointUrl: 'https://api.open-meteo.com/v1/forecast?latitude=37.77&longitude=-122.41&current_weather=true',
+    endpointUrl: 'https:
     jsonPath: 'current_weather.temperature',
     unit: '°C',
     metricLabel: 'SF AMBIENT TEMP',
@@ -67,7 +67,7 @@ export const API_PRESET_TEMPLATES: ApiTemplatePreset[] = [
     id: 'solana_price',
     name: 'Solana Spot Price (USD)',
     description: 'Fetch live SOL prices from CoinGecko API',
-    endpointUrl: 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd',
+    endpointUrl: 'https:
     jsonPath: 'solana.usd',
     unit: 'USD',
     metricLabel: 'SOL / USD SPOT',
@@ -80,7 +80,7 @@ export const API_PRESET_TEMPLATES: ApiTemplatePreset[] = [
     id: 'ethereum_price',
     name: 'Ethereum Spot Price (USD)',
     description: 'Fetch live ETH spot price from Coinbase API',
-    endpointUrl: 'https://api.coinbase.com/v2/prices/ETH-USD/spot',
+    endpointUrl: 'https:
     jsonPath: 'data.amount',
     unit: 'USD',
     metricLabel: 'ETH / USD SPOT',
@@ -93,7 +93,7 @@ export const API_PRESET_TEMPLATES: ApiTemplatePreset[] = [
     id: 'cloudflare_ping',
     name: 'Agify Age Predictor API',
     description: 'Public test API predicting name statistics',
-    endpointUrl: 'https://api.agify.io?name=pandra',
+    endpointUrl: 'https:
     jsonPath: 'count',
     unit: 'queries',
     metricLabel: 'GLOBAL MENTIONS',
@@ -104,9 +104,6 @@ export const API_PRESET_TEMPLATES: ApiTemplatePreset[] = [
   },
 ];
 
-/**
- * Extracts a value from a nested object using dot-notation (e.g., "bpi.USD.rate" or "data.0.name")
- */
 function extractJsonValue(obj: any, path: string): any {
   if (!obj || !path) return obj;
 
@@ -123,9 +120,6 @@ function extractJsonValue(obj: any, path: string): any {
   return current;
 }
 
-/**
- * Formats values for display inside widget cards (adds commas, units, decimals)
- */
 function formatDisplayValue(val: any, unit?: string): string {
   if (val === null || val === undefined) return '--';
 
@@ -144,9 +138,6 @@ function formatDisplayValue(val: any, unit?: string): string {
   return unit && !str.includes(unit) ? `${str} ${unit}` : str;
 }
 
-/**
- * Executes a live fetch to the configured API endpoint with timeout
- */
 export async function fetchApiWidgetData(config: ApiWidgetConfig): Promise<ApiFetchResult> {
   if (!config.endpointUrl || !config.endpointUrl.startsWith('http')) {
     return {
@@ -154,7 +145,7 @@ export async function fetchApiWidgetData(config: ApiWidgetConfig): Promise<ApiFe
       value: 'ERR_URL',
       badge: 'INVALID URL',
       badgeColor: '#EF4444',
-      error: 'Endpoint URL must start with http:// or https://',
+      error: 'Endpoint URL must start with http:
     };
   }
 
@@ -189,7 +180,7 @@ export async function fetchApiWidgetData(config: ApiWidgetConfig): Promise<ApiFe
     try {
       jsonData = JSON.parse(text);
     } catch {
-      // Plain text response fallback
+      
       return {
         success: true,
         value: text.slice(0, 16),

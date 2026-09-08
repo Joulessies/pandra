@@ -1,10 +1,10 @@
-# 🐼 Pandra — Personal Telemetry & Modular Command Deck Studio
+# 🐼 Pandra — AI Widget Maker
 
 <div align="center">
 
 <img src="assets/images/icon.png" alt="Pandra Logo" width="96" style="border-radius: 20px;" />
 
-### **The unified modular command deck & telemetry studio for mobile, desktop, and native home screen widgets.**
+### **The AI-powered widget maker for mobile, desktop, and native home screen widgets.**
 
 [![React Native](https://img.shields.io/badge/React_Native-0.86.3-61DAFB?style=flat-square&logo=react&logoColor=black)](https://reactnative.dev)
 [![Expo](https://img.shields.io/badge/Expo_SDK-57.0.18-000020?style=flat-square&logo=expo&logoColor=white)](https://expo.dev)
@@ -25,9 +25,9 @@
 
 ## 🌟 Executive Summary
 
-Modern builders, developers, SREs, and data enthusiasts constantly juggle fragmented monitors: cloud metrics, server uptimes, GitHub repositories, crypto prices, system vitals, weather conditions, and personal notes. Mobile widgets have historically been static, limited, or constrained by rigid third-party apps.
+Modern builders, developers, and data enthusiasts need live data at their fingertips — crypto prices, API health, weather, news, system vitals — but building widgets has always required native code and platform expertise.
 
-**Pandra** solves this by providing an **autonomous, extensible personal telemetry command deck**. It combines a drag-and-drop studio with **8+ plug-and-play widget engines**, **real-time REST API JSONPath query extractors**, **natural language AI widget generation**, **offline-first reactive cloud sync**, and **full native home screen widget parity (iOS WidgetKit + Android AppWidgets)**.
+**Pandra** solves this as an **AI-powered widget maker**. Describe what you want in plain English, and Pandra instantly generates beautiful, production-ready widgets. It combines a drag-and-drop studio with **8+ plug-and-play widget engines**, **real-time REST API JSONPath query extractors**, **natural language AI widget generation**, **offline-first reactive cloud sync**, and **full native home screen widget parity (iOS WidgetKit + Android AppWidgets)**.
 
 ---
 
@@ -265,5 +265,5 @@ pandra/
 This project is licensed under the [MIT License](LICENSE).
 
 <div align="center">
-  <sub>Built with ❤️ for builders, developers, and data enthusiasts everywhere.</sub>
+  <sub>Built with ❤️ by builders, for builders.</sub>
 </div>

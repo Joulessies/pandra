@@ -24,16 +24,16 @@ export type PandraWidgetProps = {
 };
 
 const C = {
-  // Brand & Logo Palette (Sage Green & Warm Panda Forest)
+  
   bg: '#161E1A',
   surface: '#1F2923',
   surfaceElevated: '#28362E',
   surfacePill: '#223027',
-  text: '#FAF8F5', // Warm Panda Cream
-  textSecondary: '#C8D7CE', // Soft Sage Tint
-  textMuted: '#92A498', // Brand Sage Green
+  text: '#FAF8F5', 
+  textSecondary: '#C8D7CE', 
+  textMuted: '#92A498', 
   textDim: '#6C7B72',
-  primary: '#92A498', // Pandra Logo Sage
+  primary: '#92A498', 
   primaryLight: '#AEC2B5',
   accentGreen: '#82A98E',
   border: 'rgba(146, 164, 152, 0.2)',

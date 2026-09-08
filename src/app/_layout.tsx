@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, useColorScheme, Platform } from 'react-native';
+import { View, Platform, LogBox } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider, ClerkLoaded } from '@clerk/expo';
@@ -26,6 +26,13 @@ import { RevenueCatProvider } from '@/providers/revenue-cat-provider';
 import { AppAuthProvider, useAppAuth } from '@/providers/auth-provider';
 import { registerPandraWidgetHandler } from '@/widgets/android-widget-task-handler';
 
+LogBox.ignoreLogs([
+  'Clerk: Clerk has been loaded with development keys',
+  '[RevenueCat] Using a Test Store API key',
+  'Called logOut but the current user is anonymous',
+  'Development instances have strict usage limits',
+]);
+
 if (Platform.OS === 'android') {
   registerPandraWidgetHandler();
 }
@@ -44,7 +51,6 @@ function InitialLayout() {
   const { isLoaded, isAuthenticated } = useAppAuth();
   const segments = useSegments();
   const router = useRouter();
-  const colorScheme = useColorScheme();
 
   useEffect(() => {
     if (!isLoaded) return;

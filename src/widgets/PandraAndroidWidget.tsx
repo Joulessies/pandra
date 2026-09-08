@@ -6,16 +6,16 @@ import {
 } from 'react-native-android-widget';
 
 const C = {
-  // Brand & Logo Palette (Sage Green & Warm Panda Forest)
+  
   bg: '#161E1A' as ColorProp,
   surface: '#1F2923' as ColorProp,
   surfaceElevated: '#28362E' as ColorProp,
   surfacePill: '#223027' as ColorProp,
-  text: '#FAF8F5' as ColorProp, // Warm Panda Cream
-  textSecondary: '#C8D7CE' as ColorProp, // Soft Sage Tint
-  textMuted: '#92A498' as ColorProp, // Brand Sage Green
+  text: '#FAF8F5' as ColorProp, 
+  textSecondary: '#C8D7CE' as ColorProp, 
+  textMuted: '#92A498' as ColorProp, 
   textDim: '#6C7B72' as ColorProp,
-  primary: '#92A498' as ColorProp, // Pandra Logo Sage
+  primary: '#92A498' as ColorProp, 
   primaryLight: '#AEC2B5' as ColorProp,
   accentGreen: '#82A98E' as ColorProp,
   border: '#2A3830' as ColorProp,
@@ -54,7 +54,7 @@ export function PandraSmallWidget({ data }: { data: PandraWidgetData }) {
         borderRadius: 22,
       }}
     >
-      {/* Top Header Pill */}
+      { }
       <FlexWidget
         style={{
           flexDirection: 'row',
@@ -90,7 +90,7 @@ export function PandraSmallWidget({ data }: { data: PandraWidgetData }) {
         />
       </FlexWidget>
 
-      {/* Main Metric Section */}
+      { }
       <FlexWidget style={{ flexDirection: 'column', marginTop: 4 }}>
         <TextWidget
           text={data.metric || '--'}
@@ -139,7 +139,7 @@ export function PandraWideWidget({ data }: { data: PandraWidgetData }) {
         borderRadius: 22,
       }}
     >
-      {/* Left Column: Title & Metric */}
+      { }
       <FlexWidget
         style={{
           flexDirection: 'column',
@@ -191,7 +191,7 @@ export function PandraWideWidget({ data }: { data: PandraWidgetData }) {
         </FlexWidget>
       </FlexWidget>
 
-      {/* Right Column: Status Badge & Branding */}
+      { }
       <FlexWidget
         style={{
           flexDirection: 'column',

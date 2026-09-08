@@ -116,10 +116,10 @@ export function HomeScreenWidgetModal({
             },
           ]}
         >
-          {/* Top Handle Bar */}
+          { }
           <View style={styles.handleBar} />
 
-          {/* Header */}
+          { }
           <XStack
             justifyContent="space-between"
             alignItems="center"
@@ -169,7 +169,7 @@ export function HomeScreenWidgetModal({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
           >
-            {/* 1. SLOT SELECTOR TABS */}
+            { }
             <YStack gap={8} marginBottom={18}>
               <Text
                 fontFamily={fonts.mono}
@@ -257,7 +257,7 @@ export function HomeScreenWidgetModal({
               </XStack>
             </YStack>
 
-            {/* 2. LIVE PHONE HOME SCREEN PREVIEW */}
+            { }
             <YStack
               backgroundColor="#080C0A"
               borderRadius={radius.lg}
@@ -302,7 +302,7 @@ export function HomeScreenWidgetModal({
                 </Text>
               </XStack>
 
-              {/* Render Native Mockup Tile */}
+              { }
               {selectedSlot === 'slot_small' && (
                 <View style={styles.nativeSmallTile}>
                   <XStack justifyContent="space-between" alignItems="center">
@@ -363,7 +363,7 @@ export function HomeScreenWidgetModal({
               {selectedSlot === 'slot_medium' && (
                 <View style={styles.nativeMediumTile}>
                   <XStack justifyContent="space-between" alignItems="flex-start" flex={1}>
-                    {/* Left Column */}
+                    { }
                     <YStack justifyContent="space-between" height="100%" flex={1}>
                       <YStack>
                         <Text
@@ -406,7 +406,7 @@ export function HomeScreenWidgetModal({
                       </YStack>
                     </YStack>
 
-                    {/* Right Column */}
+                    { }
                     <YStack justifyContent="space-between" alignItems="flex-end" height="100%">
                       <View
                         paddingHorizontal={9}
@@ -453,7 +453,7 @@ export function HomeScreenWidgetModal({
                 </View>
               )}
 
-              {/* Sync Action Button */}
+              { }
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={handleForceSync}
@@ -486,7 +486,7 @@ export function HomeScreenWidgetModal({
               </TouchableOpacity>
             </YStack>
 
-            {/* 3. ASSIGN FROM COMMAND DECK */}
+            { }
             <YStack gap={10} marginBottom={20}>
               <XStack justifyContent="space-between" alignItems="center">
                 <Text
@@ -592,7 +592,7 @@ export function HomeScreenWidgetModal({
               )}
             </YStack>
 
-            {/* 4. PLATFORM SETUP INSTRUCTIONS */}
+            { }
             <YStack
               backgroundColor={pandraColors.surfaceElevated}
               borderRadius={radius.lg}

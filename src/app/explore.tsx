@@ -43,9 +43,7 @@ import { pandraColors, fonts, radius, shadows } from '@/theme/token';
 import { useRevenueCat } from '@/hooks/use-revenue-cat';
 import {
     CustomWidget,
-    WidgetIconType,
     WidgetType,
-    WidgetSize,
     WidgetCardStyle,
     SparklineStyle,
 } from '@/types/widget';
@@ -57,6 +55,7 @@ import {
 } from '@/services/widget-storage';
 import { fetchApiWidgetData } from '@/services/api-fetcher';
 import { fetchLiveWeatherData } from '@/services/personal-widget-fetcher';
+import { useExploreScreenStore, useUIStore, useWorkspaceStore } from '@/stores';
 
 let ExpoClipboard: any = null;
 try {
@@ -64,8 +63,6 @@ try {
 } catch {
     ExpoClipboard = null;
 }
-
-type StudioTab = 'workshop' | 'blueprints' | 'palette' | 'backup';
 
 const COLOR_OPTIONS = [
     { name: 'Primary Blue', hex: '#3B82F6' },
@@ -106,9 +103,9 @@ const SPARKLINE_PATTERNS: { id: SparklineStyle; label: string }[] = [
 ];
 
 const PHOTO_PRESETS = [
-    { name: 'Cyber Dark', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&q=80' },
-    { name: 'Aurora Neon', url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80' },
-    { name: 'Monochrome Matrix', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80' },
+    { name: 'Cyber Dark', url: 'https:
+    { name: 'Aurora Neon', url: 'https:
+    { name: 'Monochrome Matrix', url: 'https:
 ];
 
 export default function ExploreScreen() {
@@ -116,55 +113,102 @@ export default function ExploreScreen() {
     const router = useRouter();
     const { user, clerkUser, logout } = useAppAuth();
     const { isPro, isAdmin, simulateUnlockPro, isTrialActive, trialDaysRemaining } = useRevenueCat();
+    const exploreStore = useExploreScreenStore();
+    const ui = useUIStore();
+    const workspace = useWorkspaceStore();
+    const {
+        activeTab,
+        copiedToken,
+        studioPrompt,
+        deckWidgets,
+        paywallContext,
+        engineType,
+        title,
+        subtitle,
+        metric,
+        metricLabel,
+        badge,
+        selectedColor,
+        customHexInput,
+        selectedIcon,
+        selectedSize,
+        cardStyle,
+        tone,
+        sparklinePattern,
+        trendType,
+        trendValue,
+        counterCount,
+        counterStep,
+        counterUnit,
+        noteBody,
+        photoUrl,
+        weatherCity,
+        weatherTemp,
+        weatherCondition,
+        isWeatherFetching,
+        apiUrl,
+        apiJsonPath,
+        apiUnit,
+        isApiTesting,
+        setActiveTab,
+        setCopiedToken,
+        setStudioPrompt,
+        setDeckWidgets,
+        setPaywallContext,
+        setEngineType,
+        setTitle,
+        setSubtitle,
+        setMetric,
+        setMetricLabel,
+        setBadge,
+        setSelectedColor,
+        setCustomHexInput,
+        setSelectedIcon,
+        setSelectedSize,
+        setCardStyle,
+        setTone,
+        setSparklinePattern,
+        setTrendType,
+        setTrendValue,
+        setCounterCount,
+        setNoteBody,
+        setPhotoUrl,
+        setWeatherCity,
+        setWeatherTemp,
+        setWeatherCondition,
+        setIsWeatherFetching,
+        setApiUrl,
+        setApiJsonPath,
+        setIsApiTesting,
+    } = exploreStore;
+    const {
+        isPaywallOpen,
+        isBuilderModalOpen,
+        isAiModalOpen,
+        isHomeScreenModalOpen,
+        setPaywallOpen,
+        setBuilderModalOpen,
+        setAiModalOpen,
+        setHomeScreenModalOpen,
+    } = ui;
+    const setIsPaywallOpen = setPaywallOpen;
+    const setIsBuilderModalOpen = setBuilderModalOpen;
+    const setIsAiModalOpen = setAiModalOpen;
+    const setIsHomeScreenModalOpen = setHomeScreenModalOpen;
+    const { loggingOut, setLoggingOut } = workspace;
+    const [initialAiPrompt, setInitialAiPrompt] = useState('');
 
-    const [activeTab, setActiveTab] = useState<StudioTab>('workshop');
-    const [copiedToken, setCopiedToken] = useState<string | null>(null);
-    const [loggingOut, setLoggingOut] = useState(false);
-    const [isPaywallOpen, setIsPaywallOpen] = useState(false);
-    const [isBuilderModalOpen, setIsBuilderModalOpen] = useState(false);
-    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-    const [isHomeScreenModalOpen, setIsHomeScreenModalOpen] = useState(false);
-    const [deckWidgets, setDeckWidgets] = useState<CustomWidget[]>([]);
-    const [paywallContext, setPaywallContext] = useState('');
+    const handleOpenAiWithPrompt = (promptText: string) => {
+        const clean = promptText.trim();
+        setInitialAiPrompt(clean);
+        setAiModalOpen(true);
+    };
 
     useEffect(() => {
         loadUserWidgets(user?.id, clerkUser).then((ws) => {
             setDeckWidgets(ws || []);
         });
     }, [user?.id, clerkUser, isHomeScreenModalOpen]);
-
-    // Interactive Workshop Core State
-    const [engineType, setEngineType] = useState<WidgetType>('static');
-    const [title, setTitle] = useState('Core Cluster Node');
-    const [subtitle, setSubtitle] = useState('p99 Edge latency');
-    const [metric, setMetric] = useState('14.2 ms');
-    const [metricLabel, setMetricLabel] = useState('GLOBAL RESPONSE TIME');
-    const [badge, setBadge] = useState('HEALTHY');
-    const [selectedColor, setSelectedColor] = useState<string>(pandraColors.primary);
-    const [customHexInput, setCustomHexInput] = useState<string>(pandraColors.primary);
-    const [selectedIcon, setSelectedIcon] = useState<WidgetIconType>('telemetry');
-    const [selectedSize, setSelectedSize] = useState<WidgetSize>('standard');
-    const [cardStyle, setCardStyle] = useState<WidgetCardStyle>('glass');
-    const [tone, setTone] = useState<'ink' | 'paper'>('ink');
-    const [sparklinePattern, setSparklinePattern] = useState<SparklineStyle>('growth');
-    const [trendType, setTrendType] = useState<'positive' | 'negative' | 'none'>('positive');
-    const [trendValue, setTrendValue] = useState('+14.2%');
-
-    // Engine-Specific Customization Sub-State
-    const [counterCount, setCounterCount] = useState(42);
-    const [counterStep, _setCounterStep] = useState(1);
-    const [counterUnit, _setCounterUnit] = useState('Tasks');
-    const [noteBody, setNoteBody] = useState('Deploy v2.4 API pipeline to production edge.');
-    const [photoUrl, setPhotoUrl] = useState(PHOTO_PRESETS[0].url);
-    const [weatherCity, setWeatherCity] = useState('Tokyo');
-    const [weatherTemp, setWeatherTemp] = useState('22°C');
-    const [weatherCondition, setWeatherCondition] = useState('Clear Sky');
-    const [isWeatherFetching, setIsWeatherFetching] = useState(false);
-    const [apiUrl, setApiUrl] = useState('https://api.github.com/repos/expo/expo');
-    const [apiJsonPath, setApiJsonPath] = useState('stargazers_count');
-    const [apiUnit, _setApiUnit] = useState('★');
-    const [isApiTesting, setIsApiTesting] = useState(false);
-    const [_apiTestSuccess, setApiTestSuccess] = useState<boolean | null>(null);
 
     const handleLogout = async () => {
         try {
@@ -256,7 +300,6 @@ export default function ExploreScreen() {
             return;
         }
         setIsApiTesting(true);
-        setApiTestSuccess(null);
         try {
             const res = await fetchApiWidgetData({
                 endpointUrl: apiUrl.trim(),
@@ -267,13 +310,10 @@ export default function ExploreScreen() {
             if (res.success) {
                 setMetric(res.value);
                 setBadge(res.badge || 'ONLINE');
-                setApiTestSuccess(true);
             } else {
-                setApiTestSuccess(false);
                 Alert.alert('API Fetch Error', res.error || 'Failed to extract JSON key from response.');
             }
         } catch (err: any) {
-            setApiTestSuccess(false);
             Alert.alert('Network Error', err.message || 'Could not reach server.');
         } finally {
             setIsApiTesting(false);
@@ -296,7 +336,6 @@ export default function ExploreScreen() {
         }
     };
 
-    // Construct live CustomWidget model
     const livePreviewWidget: CustomWidget = {
         id: 'studio_live_preview',
         title: title.trim() || 'Custom Tile',
@@ -377,7 +416,7 @@ export default function ExploreScreen() {
         };
 
         await addUserWidget(newWidget, user?.id, clerkUser);
-        Alert.alert('Widget Deployed', `"${newWidget.title}" has been saved to your Command Deck.`, [
+        Alert.alert('Widget Deployed', `"${newWidget.title}" has been saved to your dashboard.`, [
             { text: 'View Deck', onPress: () => router.replace('/' as any) },
             { text: 'Keep Designing', style: 'cancel' },
         ]);
@@ -412,7 +451,7 @@ export default function ExploreScreen() {
             id: Date.now().toString(),
         };
         await addUserWidget(deployed, user?.id, clerkUser);
-        Alert.alert('Blueprint Installed', `"${deployed.title}" has been added to your Command Deck.`, [
+        Alert.alert('Blueprint Installed', `"${deployed.title}" has been added to your dashboard.`, [
             { text: 'View Deck', onPress: () => router.replace('/' as any) },
             { text: 'Done', style: 'cancel' },
         ]);
@@ -436,7 +475,7 @@ export default function ExploreScreen() {
     return (
         <View flex={1} backgroundColor={pandraColors.bg}>
             <YStack flex={1} backgroundColor={pandraColors.bg}>
-                {/* Header */}
+                { }
                 <XStack
                     alignItems="center"
                     justifyContent="space-between"
@@ -470,15 +509,15 @@ export default function ExploreScreen() {
                             alignItems="center"
                             justifyContent="center"
                         >
-                            <Sliders size={16} color={pandraColors.primary} />
+                            <Sparkles size={16} color={pandraColors.primary} />
                         </View>
 
                         <YStack>
                             <Text fontFamily={fonts.bodySemibold} fontSize={16} color={pandraColors.text}>
-                                Widget Studio
+                                AI Widget Studio
                             </Text>
                             <Text fontFamily={fonts.body} fontSize={11} color={pandraColors.textMuted}>
-                                Personal Widget Workshop
+                                Prompt & Blueprint Lab
                             </Text>
                         </YStack>
                     </XStack>
@@ -571,7 +610,7 @@ export default function ExploreScreen() {
                     </XStack>
                 </XStack>
 
-                {/* Studio Tab Bar */}
+                { }
                 <XStack paddingHorizontal={20} paddingTop={6} paddingBottom={10} backgroundColor={pandraColors.bg}>
                     <XStack
                         flex={1}
@@ -620,10 +659,97 @@ export default function ExploreScreen() {
                     contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110, paddingTop: 4 }}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* TAB 1: WORKSHOP (FULL CUSTOMIZATION WORKSPACE) */}
+                    { }
                     {activeTab === 'workshop' && (
                         <YStack gap={16}>
-                            {/* Live Interactive Preview Canvas */}
+                            { }
+                            <YStack
+                                backgroundColor={pandraColors.surface}
+                                borderRadius={radius.md}
+                                padding={14}
+                                gap={12}
+                                borderWidth={1}
+                                borderColor={pandraColors.borderHighlight}
+                            >
+                                <XStack alignItems="center" justifyContent="space-between">
+                                    <XStack alignItems="center" gap={6}>
+                                        <View
+                                            width={24}
+                                            height={24}
+                                            borderRadius={radius.xs}
+                                            backgroundColor={pandraColors.primaryGlow}
+                                            alignItems="center"
+                                            justifyContent="center"
+                                        >
+                                            <Sparkles size={13} color={pandraColors.primary} />
+                                        </View>
+                                        <Text fontFamily={fonts.bodySemibold} fontSize={13} color={pandraColors.text}>
+                                            AI Widget Synthesis
+                                        </Text>
+                                    </XStack>
+                                    <Text fontFamily={fonts.body} fontSize={11} color={pandraColors.textMuted}>
+                                        Prompt Studio
+                                    </Text>
+                                </XStack>
+
+                                <XStack
+                                    backgroundColor={pandraColors.bg}
+                                    borderRadius={radius.sm}
+                                    borderWidth={1}
+                                    borderColor={pandraColors.border}
+                                    alignItems="center"
+                                    paddingHorizontal={12}
+                                    height={44}
+                                    gap={8}
+                                >
+                                    <Input
+                                        flex={1}
+                                        height={42}
+                                        backgroundColor="transparent"
+                                        borderWidth={0}
+                                        fontFamily={fonts.body}
+                                        fontSize={12.5}
+                                        color={pandraColors.text}
+                                        placeholder="Prompt AI e.g., 'Solana price pulse with 30s interval'..."
+                                        placeholderTextColor={pandraColors.textDim as any}
+                                        value={studioPrompt}
+                                        onChangeText={setStudioPrompt}
+                                        onSubmitEditing={() => {
+                                            if (studioPrompt.trim()) {
+                                                const p = studioPrompt;
+                                                setStudioPrompt('');
+                                                handleOpenAiWithPrompt(p);
+                                            }
+                                        }}
+                                        returnKeyType="go"
+                                    />
+                                    <TouchableOpacity
+                                        activeOpacity={0.8}
+                                        onPress={() => {
+                                            const p = studioPrompt.trim();
+                                            setStudioPrompt('');
+                                            handleOpenAiWithPrompt(p || 'Live crypto and weather tracker');
+                                        }}
+                                        style={{
+                                            height: 30,
+                                            paddingHorizontal: 12,
+                                            borderRadius: radius.xs,
+                                            backgroundColor: pandraColors.primary,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 4,
+                                        }}
+                                    >
+                                        <Sparkles size={11} color="#FFF" />
+                                        <Text fontFamily={fonts.bodyMedium} fontSize={11} color="#FFF">
+                                            Synthesize
+                                        </Text>
+                                    </TouchableOpacity>
+                                </XStack>
+                            </YStack>
+
+                            { }
                             <YStack gap={8}>
                                 <XStack justifyContent="space-between" alignItems="center">
                                     <Text fontFamily={fonts.bodySemibold} fontSize={13} color={pandraColors.textSecondary}>
@@ -658,7 +784,7 @@ export default function ExploreScreen() {
                                 />
                             </YStack>
 
-                            {/* AI Prompt Synthesizer Banner */}
+                            { }
                             <TouchableOpacity
                                 activeOpacity={0.85}
                                 onPress={() => setIsAiModalOpen(true)}
@@ -696,7 +822,7 @@ export default function ExploreScreen() {
                                 <Plus size={14} color={pandraColors.accentPurple} />
                             </TouchableOpacity>
 
-                            {/* Multi-Source Wizard Banner */}
+                            { }
                             <TouchableOpacity
                                 activeOpacity={0.85}
                                 onPress={() => setIsBuilderModalOpen(true)}
@@ -725,7 +851,7 @@ export default function ExploreScreen() {
                                 <Plus size={14} color={pandraColors.primary} />
                             </TouchableOpacity>
 
-                            {/* Engine Mode Switcher */}
+                            { }
                             <YStack
                                 backgroundColor={pandraColors.surface}
                                 borderRadius={radius.md}
@@ -774,7 +900,7 @@ export default function ExploreScreen() {
                                 </XStack>
                             </YStack>
 
-                            {/* Visual Aesthetics & Color Tuning */}
+                            { }
                             <YStack
                                 backgroundColor={pandraColors.surface}
                                 borderRadius={radius.md}
@@ -785,7 +911,7 @@ export default function ExploreScreen() {
                                     2. Color & Visual Aesthetics
                                 </Text>
 
-                                {/* Swatches */}
+                                { }
                                 <YStack gap={6}>
                                     <Text fontFamily={fonts.body} fontSize={10.5} color={pandraColors.textMuted}>
                                         Select Accent Hue
@@ -816,7 +942,7 @@ export default function ExploreScreen() {
                                     </XStack>
                                 </YStack>
 
-                                {/* Custom Hex Input */}
+                                { }
                                 <XStack alignItems="center" gap={8}>
                                     <Text fontFamily={fonts.mono} fontSize={11} color={pandraColors.textMuted}>
                                         HEX:
@@ -838,9 +964,9 @@ export default function ExploreScreen() {
                                     />
                                 </XStack>
 
-                                {/* Card Sizing & Tone */}
+                                { }
                                 <XStack gap={8}>
-                                    {/* Size */}
+                                    { }
                                     <YStack flex={1} gap={4}>
                                         <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                                             Grid Size
@@ -886,7 +1012,7 @@ export default function ExploreScreen() {
                                         </XStack>
                                     </YStack>
 
-                                    {/* Tone */}
+                                    { }
                                     <YStack flex={1} gap={4}>
                                         <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                                             Card Theme Tone
@@ -917,7 +1043,7 @@ export default function ExploreScreen() {
                                     </YStack>
                                 </XStack>
 
-                                {/* Card Style */}
+                                { }
                                 <YStack gap={6}>
                                     <Text fontFamily={fonts.body} fontSize={10.5} color={pandraColors.textMuted}>
                                         Card Style
@@ -950,7 +1076,7 @@ export default function ExploreScreen() {
                                     </XStack>
                                 </YStack>
 
-                                {/* Sparkline & Trend */}
+                                { }
                                 {engineType === 'static' && (
                                     <YStack gap={8}>
                                         <Text fontFamily={fonts.body} fontSize={10.5} color={pandraColors.textMuted}>
@@ -981,7 +1107,7 @@ export default function ExploreScreen() {
                                             })}
                                         </XStack>
 
-                                        {/* Trend Delta */}
+                                        { }
                                         <Text fontFamily={fonts.body} fontSize={10.5} color={pandraColors.textMuted} marginTop={4}>
                                             Trend Delta Indicator
                                         </Text>
@@ -1020,7 +1146,7 @@ export default function ExploreScreen() {
                                 )}
                             </YStack>
 
-                            {/* Content & Copy Parameters */}
+                            { }
                             <YStack
                                 backgroundColor={pandraColors.surface}
                                 borderRadius={radius.md}
@@ -1031,7 +1157,7 @@ export default function ExploreScreen() {
                                     3. Content & Text Customization
                                 </Text>
 
-                                {/* Title & Subtitle */}
+                                { }
                                 <YStack gap={4}>
                                     <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
                                         Widget Title
@@ -1068,7 +1194,7 @@ export default function ExploreScreen() {
                                     />
                                 </YStack>
 
-                                {/* Metric & Badge */}
+                                { }
                                 <XStack gap={10}>
                                     <YStack flex={1} gap={4}>
                                         <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
@@ -1125,7 +1251,7 @@ export default function ExploreScreen() {
                                     />
                                 </YStack>
 
-                                {/* Specific Engine Controls */}
+                                { }
                                 {engineType === 'note' && (
                                     <YStack gap={4} marginTop={4}>
                                         <Text fontFamily={fonts.body} fontSize={10} color={pandraColors.textMuted}>
@@ -1293,7 +1419,7 @@ export default function ExploreScreen() {
                                             color={pandraColors.text}
                                             value={apiUrl}
                                             onChangeText={setApiUrl}
-                                            placeholder="https://api.example.com/v1/data"
+                                            placeholder="https:
                                             placeholderTextColor={pandraColors.textMuted as any}
                                         />
                                         <XStack gap={8}>
@@ -1340,7 +1466,7 @@ export default function ExploreScreen() {
                                     </YStack>
                                 )}
 
-                                {/* Deploy Button */}
+                                { }
                                 <TouchableOpacity
                                     activeOpacity={0.85}
                                     onPress={handleDeployCustomWidget}
@@ -1357,14 +1483,14 @@ export default function ExploreScreen() {
                                 >
                                     <Plus size={16} color="#FFFFFF" />
                                     <Text fontFamily={fonts.bodySemibold} fontSize={13.5} color="#FFFFFF">
-                                        Deploy Widget to Command Deck
+                                        Deploy Widget to Dashboard
                                     </Text>
                                 </TouchableOpacity>
                             </YStack>
                         </YStack>
                     )}
 
-                    {/* TAB 2: BLUEPRINTS / STARTER KITS */}
+                    { }
                     {activeTab === 'blueprints' && (
                         <YStack gap={14}>
                             <Text fontFamily={fonts.bodySemibold} fontSize={14} color={pandraColors.text}>
@@ -1409,7 +1535,7 @@ export default function ExploreScreen() {
                                         {role.description}
                                     </Text>
 
-                                    {/* Widgets in this blueprint */}
+                                    { }
                                     <YStack gap={6} marginTop={4}>
                                         {role.widgets.map((w, wi) => (
                                             <XStack
@@ -1430,6 +1556,25 @@ export default function ExploreScreen() {
                                                 </YStack>
 
                                                 <XStack gap={6}>
+                                                    <TouchableOpacity
+                                                        activeOpacity={0.8}
+                                                        onPress={() => handleOpenAiWithPrompt(`Generate an enhanced live widget based on ${w.title}: ${w.subtitle || w.metric}`)}
+                                                        style={{
+                                                            paddingHorizontal: 8,
+                                                            paddingVertical: 5,
+                                                            borderRadius: radius.xs,
+                                                            backgroundColor: pandraColors.primaryGlow,
+                                                            flexDirection: 'row',
+                                                            alignItems: 'center',
+                                                            gap: 4,
+                                                        }}
+                                                    >
+                                                        <Sparkles size={11} color={pandraColors.primary} />
+                                                        <Text fontFamily={fonts.bodyMedium} fontSize={10} color={pandraColors.primary}>
+                                                            AI Remix
+                                                        </Text>
+                                                    </TouchableOpacity>
+
                                                     <TouchableOpacity
                                                         activeOpacity={0.8}
                                                         onPress={() => handleLoadBlueprintIntoWorkshop(w)}
@@ -1476,7 +1621,7 @@ export default function ExploreScreen() {
                         </YStack>
                     )}
 
-                    {/* TAB 3: PALETTE */}
+                    { }
                     {activeTab === 'palette' && (
                         <YStack gap={14}>
                             <Text fontFamily={fonts.bodySemibold} fontSize={14} color={pandraColors.text}>
@@ -1528,7 +1673,7 @@ export default function ExploreScreen() {
                         </YStack>
                     )}
 
-                    {/* TAB 4: DECK SYNC & BACKUP */}
+                    { }
                     {activeTab === 'backup' && (
                         <YStack gap={14}>
                             <Text fontFamily={fonts.bodySemibold} fontSize={14} color={pandraColors.text}>
@@ -1588,7 +1733,7 @@ export default function ExploreScreen() {
                                 </XStack>
                             </YStack>
 
-                            {/* Account & Subscription Card */}
+                            { }
                             <Text fontFamily={fonts.bodySemibold} fontSize={14} color={pandraColors.text} marginTop={6}>
                                 Account & Access
                             </Text>
@@ -1696,7 +1841,7 @@ export default function ExploreScreen() {
                     )}
                 </ScrollView>
 
-                {/* Bottom Dock */}
+                { }
                 <View
                     position="absolute"
                     bottom={bottomPadding + 6}
@@ -1750,36 +1895,40 @@ export default function ExploreScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* Paywall Modal */}
+                { }
                 <PaywallModal
                     isOpen={isPaywallOpen}
                     onClose={() => setIsPaywallOpen(false)}
                     featureContext={paywallContext}
                 />
 
-                {/* Custom Widget Builder Modal */}
+                { }
                 <CustomWidgetBuilderModal
                     isOpen={isBuilderModalOpen}
                     onClose={() => setIsBuilderModalOpen(false)}
                     onSave={async (widget) => {
-                        await addUserWidget(widget, user?.id);
+                        await addUserWidget(widget, user?.id, clerkUser);
                         Alert.alert('Widget Deployed', `"${widget.title}" has been saved to your deck.`);
                         router.push('/' as any);
                     }}
                 />
 
-                {/* AI Widget Generator Modal */}
+                { }
                 <AiWidgetGeneratorModal
                     isOpen={isAiModalOpen}
-                    onClose={() => setIsAiModalOpen(false)}
+                    initialPrompt={initialAiPrompt}
+                    onClose={() => {
+                        setIsAiModalOpen(false);
+                        setInitialAiPrompt('');
+                    }}
                     onSave={async (widget) => {
-                        await addUserWidget(widget, user?.id);
+                        await addUserWidget(widget, user?.id, clerkUser);
                         Alert.alert('Widget Deployed', `"${widget.title}" has been saved to your deck.`);
                         router.push('/' as any);
                     }}
                 />
 
-                {/* Native Home Screen Widgets Exporter & Preview Modal */}
+                { }
                 <HomeScreenWidgetModal
                     isOpen={isHomeScreenModalOpen}
                     onClose={() => setIsHomeScreenModalOpen(false)}
