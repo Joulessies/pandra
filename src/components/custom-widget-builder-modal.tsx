@@ -34,9 +34,6 @@ import {
   CustomWidget,
   WidgetIconType,
   WidgetType,
-  WidgetSize,
-  WidgetCardStyle,
-  SparklineStyle,
   WidgetTrend,
 } from '@/types/widget';
 import { WidgetTile } from '@/components/widgets/widgetTile';

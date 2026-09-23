@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { ADMIN_CREDENTIALS } from "@/services/widget-storage";
@@ -29,6 +30,31 @@ interface AuthState {
   logout: () => Promise<void>;
   reset: () => void;
 }
+
+const safeStorage = {
+  getItem: async (name: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.getItem === "function") {
+        return await AsyncStorage.getItem(name);
+      }
+    } catch {}
+    return null;
+  },
+  setItem: async (name: string, value: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.setItem === "function") {
+        await AsyncStorage.setItem(name, value);
+      }
+    } catch {}
+  },
+  removeItem: async (name: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.removeItem === "function") {
+        await AsyncStorage.removeItem(name);
+      }
+    } catch {}
+  },
+};
 
 const useAuthStore = create<AuthState>()(
   persist(
@@ -118,6 +144,7 @@ const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-store",
+      storage: createJSONStorage(() => safeStorage),
       partialize: (state) => ({
         isLocalAdmin: state.isLocalAdmin,
         user: state.user,

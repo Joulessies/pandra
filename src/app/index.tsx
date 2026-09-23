@@ -6,6 +6,7 @@ import {
   Alert,
   RefreshControl,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -118,6 +119,7 @@ const INSPIRATION_PILLS = [
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const { user, clerkUser, logout } = useAppAuth();
 
@@ -399,6 +401,8 @@ export default function HomeScreen() {
         user?.id,
         clerkUser,
       );
+      // Explicitly sync fresh data to native home screen widgets
+      syncDeckToNativeWidgets(updated).catch(() => {});
     } finally {
       workspaceStore.setRefreshing(false);
     }
@@ -431,21 +435,24 @@ export default function HomeScreen() {
 
   const handleSaveWidget = async (savedWidget: CustomWidget) => {
     const exists = widgets.some((w) => w.id === savedWidget.id);
-    let updated: CustomWidget[];
-    if (exists) {
-      updated = await updateUserWidget(savedWidget, user?.id, clerkUser);
-    } else {
-      if (!isPro && widgets.length >= 4) {
-        uiStore.setPaywallOpen(
-          true,
-          "Free tier is limited to 4 widgets. Upgrade to Pandra Pro for unlimited widgets.",
-        );
-        return;
-      }
-      updated = await addUserWidget(savedWidget, user?.id, clerkUser);
+    if (!exists && !isPro && widgets.length >= 4) {
+      uiStore.setPaywallOpen(
+        true,
+        "Free tier is limited to 4 widgets. Upgrade to Pandra Pro for unlimited widgets.",
+      );
+      return;
     }
+    const updated = exists
+      ? widgets.map((w) => (w.id === savedWidget.id ? savedWidget : w))
+      : [...widgets, savedWidget];
     workspaceStore.setWidgets(updated);
     workspaceStore.setEditingWidget(null);
+    await updateWorkspaceWidgets(
+      activeWorkspaceIdState,
+      updated,
+      user?.id,
+      clerkUser,
+    );
   };
 
   const handleSwitchWorkspace = async (wsId: string) => {
@@ -953,41 +960,42 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </ScrollView>
 
-          {}
+          {/* Engine Status / Metric strip */}
           <XStack
             backgroundColor={pandraColors.surface}
             borderRadius={radius.md}
-            paddingVertical={10}
-            paddingHorizontal={14}
+            paddingVertical={8}
+            paddingHorizontal={12}
             justifyContent="space-between"
             alignItems="center"
             marginBottom={14}
             borderWidth={1}
             borderColor={pandraColors.border}
           >
-            <XStack alignItems="center" gap={7}>
+            <XStack alignItems="center" gap={6} flexShrink={1}>
               <View
-                width={7}
-                height={7}
-                borderRadius={4}
+                width={6.5}
+                height={6.5}
+                borderRadius={3.5}
                 backgroundColor={pandraColors.accentGreen}
               />
               <Text
                 fontFamily={fonts.bodyMedium}
                 fontSize={12}
                 color={pandraColors.text}
+                numberOfLines={1}
               >
-                AI Widget Engine
+                {windowWidth > 420 ? "AI Widget Engine" : "AI Engine"}
               </Text>
               <View
-                paddingHorizontal={6}
+                paddingHorizontal={5}
                 paddingVertical={2}
                 borderRadius={radius.xs}
                 backgroundColor="rgba(16, 185, 129, 0.12)"
               >
                 <Text
                   fontFamily={fonts.mono}
-                  fontSize={9.5}
+                  fontSize={9}
                   color={pandraColors.accentGreen}
                 >
                   ONLINE
@@ -995,11 +1003,12 @@ export default function HomeScreen() {
               </View>
             </XStack>
 
-            <XStack alignItems="center" gap={12}>
+            <XStack alignItems="center" gap={8} flexShrink={0}>
               <Text
                 fontFamily={fonts.mono}
                 fontSize={11}
                 color={pandraColors.textMuted}
+                numberOfLines={1}
               >
                 {widgets.length} active
               </Text>
@@ -1011,9 +1020,12 @@ export default function HomeScreen() {
                   alignItems: "center",
                   gap: 4,
                   paddingHorizontal: 8,
-                  paddingVertical: 3,
+                  paddingVertical: 3.5,
                   borderRadius: radius.xs,
                   backgroundColor: pandraColors.surfaceElevated,
+                  borderWidth: 1,
+                  borderColor: pandraColors.borderHighlight,
+                  flexShrink: 0,
                 }}
               >
                 <Smartphone size={11} color={pandraColors.primary} />
@@ -1022,7 +1034,7 @@ export default function HomeScreen() {
                   fontSize={11}
                   color={pandraColors.primary}
                 >
-                  Phone Sync
+                  {windowWidth < 350 ? "Sync" : "Phone Sync"}
                 </Text>
               </TouchableOpacity>
             </XStack>

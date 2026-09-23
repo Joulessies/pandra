@@ -1,3 +1,5 @@
+"use no memo";
+
 import React from 'react';
 import { Text, VStack, HStack, Spacer } from '@expo/ui/swift-ui';
 import {
@@ -42,7 +44,7 @@ const C = {
 function SmallWidget(props: PandraWidgetProps) {
   'widget';
   return (
-    <VStack modifiers={[padding({ all: 16 }), containerBackground(C.bg, 'widget')]}>
+    <VStack modifiers={[padding({ all: 12 }), containerBackground(C.bg, 'widget')]}>
       <HStack>
         <Text
           modifiers={[
@@ -102,7 +104,7 @@ function SmallWidget(props: PandraWidgetProps) {
 function MediumWidget(props: PandraWidgetProps) {
   'widget';
   return (
-    <HStack modifiers={[padding({ all: 16 }), containerBackground(C.bg, 'widget')]}>
+    <HStack modifiers={[padding({ all: 12 }), containerBackground(C.bg, 'widget')]}>
       <VStack>
         <Text
           modifiers={[

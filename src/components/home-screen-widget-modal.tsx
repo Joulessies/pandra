@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { View, YStack, XStack, Text } from 'tamagui';
 import {
@@ -24,6 +25,7 @@ import {
   NativeWidgetSlotsState,
   getNativeWidgetSlotAssignments,
   syncDeckToNativeWidgets,
+  pinWidgetToHomeScreen,
 } from '@/services/native-widget-bridge';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -48,7 +50,11 @@ export function HomeScreenWidgetModal({
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
-  const [activePlatformTab, setActivePlatformTab] = useState<'ios' | 'android'>('ios');
+  const [isPinning, setIsPinning] = useState(false);
+  const [pinSuccess, setPinSuccess] = useState(false);
+  const [activePlatformTab, setActivePlatformTab] = useState<'ios' | 'android'>(
+    Platform.OS === 'android' ? 'android' : 'ios'
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -88,6 +94,28 @@ export function HomeScreenWidgetModal({
       Alert.alert(
         'Widgets Synced!',
         'Your latest telemetry metrics have been exported to the phone’s native widget storage.'
+      );
+    }
+  }
+
+  async function handlePinToHomeScreen() {
+    setIsPinning(true);
+    await syncDeckToNativeWidgets(widgets, slotAssignments);
+    const targetName =
+      selectedSlot === 'slot_small' ? 'PandraSmallWidget' : 'PandraWideWidget';
+    const success = await pinWidgetToHomeScreen(targetName);
+    setIsPinning(false);
+    if (success) {
+      setPinSuccess(true);
+      setTimeout(() => setPinSuccess(false), 2500);
+      Alert.alert(
+        'Widget Added!',
+        'Your widget has been pinned to your home screen with live metrics.'
+      );
+    } else {
+      Alert.alert(
+        'Widget Ready to Place',
+        'Your widget data is synced! You can touch & hold any empty area on your phone home screen, tap Widgets, find Pandra, and drag it to your screen.'
       );
     }
   }
@@ -302,37 +330,40 @@ export function HomeScreenWidgetModal({
                 </Text>
               </XStack>
 
-              { }
+              {/* Preview Canvas */}
               {selectedSlot === 'slot_small' && (
                 <View style={styles.nativeSmallTile}>
                   <XStack justifyContent="space-between" alignItems="center">
                     <View
-                      paddingHorizontal={8}
-                      paddingVertical={3}
-                      borderRadius={10}
-                      backgroundColor="#223027"
+                      paddingHorizontal={7}
+                      paddingVertical={2.5}
+                      borderRadius={7}
+                      backgroundColor="#25372C"
                     >
                       <Text
                         fontFamily={fonts.bodyMedium}
-                        fontSize={9.5}
+                        fontSize={9}
                         color={assignedWidget?.badgeColor || pandraColors.primaryLight}
                       >
                         {assignedWidget?.badge || 'LIVE'}
                       </Text>
                     </View>
-                    <Text
-                      fontFamily={fonts.bodyMedium}
-                      fontSize={10}
-                      color={pandraColors.textDim}
-                    >
-                      Pandra
-                    </Text>
+                    <XStack alignItems="center" gap={4}>
+                      <View width={4} height={4} borderRadius={2} backgroundColor="#34D399" />
+                      <Text
+                        fontFamily={fonts.bodyMedium}
+                        fontSize={9.5}
+                        color={pandraColors.textDim}
+                      >
+                        Pandra
+                      </Text>
+                    </XStack>
                   </XStack>
 
-                  <YStack gap={2} marginTop={8}>
+                  <YStack gap={1}>
                     <Text
                       fontFamily={fonts.display}
-                      fontSize={26}
+                      fontSize={25}
                       color="#FAF8F5"
                       letterSpacing={-0.5}
                       numberOfLines={1}
@@ -340,21 +371,31 @@ export function HomeScreenWidgetModal({
                       {assignedWidget?.metric || '--'}
                     </Text>
                     <Text
-                      fontFamily={fonts.bodyMedium}
-                      fontSize={9.5}
-                      color={pandraColors.primary}
+                      fontFamily={fonts.mono}
+                      fontSize={8.5}
+                      color={pandraColors.primaryLight}
                       letterSpacing={0.5}
                     >
-                      {assignedWidget?.metricLabel || 'PANDRA TELEMETRY'}
+                      {(assignedWidget?.metricLabel || 'PANDRA TELEMETRY').toUpperCase()}
                     </Text>
+                  </YStack>
+
+                  <YStack>
                     <Text
-                      fontFamily={fonts.bodyMedium}
-                      fontSize={12}
-                      color="#C8D7CE"
+                      fontFamily={fonts.bodySemibold}
+                      fontSize={11.5}
+                      color="#FAF8F5"
                       numberOfLines={1}
-                      marginTop={4}
                     >
                       {assignedWidget?.title || 'Overview'}
+                    </Text>
+                    <Text
+                      fontFamily={fonts.body}
+                      fontSize={9.5}
+                      color={pandraColors.textSecondary}
+                      numberOfLines={1}
+                    >
+                      {assignedWidget?.subtitle || 'Live Feed'}
                     </Text>
                   </YStack>
                 </View>
@@ -362,13 +403,41 @@ export function HomeScreenWidgetModal({
 
               {selectedSlot === 'slot_medium' && (
                 <View style={styles.nativeMediumTile}>
-                  <XStack justifyContent="space-between" alignItems="flex-start" flex={1}>
-                    { }
-                    <YStack justifyContent="space-between" height="100%" flex={1}>
+                  <XStack justifyContent="space-between" alignItems="center" flex={1}>
+                    {/* Left Column */}
+                    <YStack justifyContent="space-between" height="100%" flex={1} marginRight={12}>
+                      <XStack alignItems="center" gap={5}>
+                        <View
+                          width={5}
+                          height={5}
+                          borderRadius={2.5}
+                          backgroundColor="#34D399"
+                        />
+                        <Text
+                          fontFamily={fonts.mono}
+                          fontSize={8.5}
+                          color={pandraColors.primaryLight}
+                          letterSpacing={0.5}
+                          numberOfLines={1}
+                        >
+                          {(assignedWidget?.metricLabel || 'PANDRA TELEMETRY').toUpperCase()}
+                        </Text>
+                      </XStack>
+
+                      <Text
+                        fontFamily={fonts.display}
+                        fontSize={27}
+                        color="#FAF8F5"
+                        letterSpacing={-0.5}
+                        numberOfLines={1}
+                      >
+                        {assignedWidget?.metric || '--'}
+                      </Text>
+
                       <YStack>
                         <Text
                           fontFamily={fonts.bodySemibold}
-                          fontSize={14}
+                          fontSize={12.5}
                           color="#FAF8F5"
                           numberOfLines={1}
                         >
@@ -376,60 +445,66 @@ export function HomeScreenWidgetModal({
                         </Text>
                         <Text
                           fontFamily={fonts.body}
-                          fontSize={11}
+                          fontSize={10.5}
                           color="#C8D7CE"
                           numberOfLines={1}
-                          marginTop={1}
                         >
                           {assignedWidget?.subtitle || 'Live Feed'}
                         </Text>
                       </YStack>
-
-                      <YStack marginTop={12}>
-                        <Text
-                          fontFamily={fonts.display}
-                          fontSize={26}
-                          color="#FAF8F5"
-                          letterSpacing={-0.5}
-                        >
-                          {assignedWidget?.metric || '--'}
-                        </Text>
-                        <Text
-                          fontFamily={fonts.bodyMedium}
-                          fontSize={9.5}
-                          color={pandraColors.primary}
-                          letterSpacing={0.5}
-                          marginTop={1}
-                        >
-                          {assignedWidget?.metricLabel || 'REALTIME TELEMETRY'}
-                        </Text>
-                      </YStack>
                     </YStack>
 
-                    { }
-                    <YStack justifyContent="space-between" alignItems="flex-end" height="100%">
+                    {/* Right Column: Elevated Telemetry Panel */}
+                    <YStack
+                      width={122}
+                      height="100%"
+                      backgroundColor="#1F2C24"
+                      borderRadius={14}
+                      paddingVertical={8}
+                      paddingHorizontal={9}
+                      justifyContent="space-between"
+                      alignItems="center"
+                      borderWidth={1}
+                      borderColor="#2A3C31"
+                    >
                       <View
-                        paddingHorizontal={9}
-                        paddingVertical={3.5}
-                        borderRadius={10}
-                        backgroundColor="#223027"
+                        paddingHorizontal={8}
+                        paddingVertical={2.5}
+                        borderRadius={7}
+                        backgroundColor="#25372C"
+                        width="100%"
+                        alignItems="center"
                       >
                         <Text
                           fontFamily={fonts.bodyMedium}
-                          fontSize={10}
+                          fontSize={9}
                           color={assignedWidget?.badgeColor || pandraColors.primaryLight}
+                          numberOfLines={1}
                         >
                           {assignedWidget?.badge || 'LIVE'}
                         </Text>
                       </View>
 
-                      <Text
-                        fontFamily={fonts.bodyMedium}
-                        fontSize={10}
-                        color={pandraColors.textDim}
-                      >
-                        Pandra
-                      </Text>
+                      {/* Sparkline Bars */}
+                      <XStack alignItems="flex-end" justifyContent="center" height={20} gap={3.5}>
+                        <View width={3.5} height={9} borderRadius={2} backgroundColor={pandraColors.primary} />
+                        <View width={3.5} height={15} borderRadius={2} backgroundColor="#34D399" />
+                        <View width={3.5} height={11} borderRadius={2} backgroundColor={pandraColors.primaryLight} />
+                        <View width={3.5} height={20} borderRadius={2} backgroundColor={assignedWidget?.badgeColor || '#34D399'} />
+                        <View width={3.5} height={16} borderRadius={2} backgroundColor="#34D399" />
+                        <View width={3.5} height={12} borderRadius={2} backgroundColor={pandraColors.primary} />
+                      </XStack>
+
+                      <XStack alignItems="center" gap={4}>
+                        <View width={4} height={4} borderRadius={2} backgroundColor="#34D399" />
+                        <Text
+                          fontFamily={fonts.bodyMedium}
+                          fontSize={8.5}
+                          color={pandraColors.textDim}
+                        >
+                          Pandra Studio
+                        </Text>
+                      </XStack>
                     </YStack>
                   </XStack>
                 </View>
@@ -484,6 +559,47 @@ export function HomeScreenWidgetModal({
                   </Text>
                 </XStack>
               </TouchableOpacity>
+
+              {Platform.OS === 'android' && selectedSlot !== 'slot_accessory' && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handlePinToHomeScreen}
+                  disabled={isPinning}
+                  style={[
+                    styles.pinButton,
+                    pinSuccess && {
+                      backgroundColor: pandraColors.accentGreen,
+                      borderColor: pandraColors.accentGreen,
+                    },
+                  ]}
+                >
+                  <XStack alignItems="center" gap={8}>
+                    {isPinning ? (
+                      <ActivityIndicator size="small" color="#FAF8F5" />
+                    ) : pinSuccess ? (
+                      <CheckCircle2 size={16} color="#0E1210" />
+                    ) : (
+                      <Smartphone
+                        size={15}
+                        color={pinSuccess ? '#0E1210' : pandraColors.primaryLight}
+                      />
+                    )}
+                    <Text
+                      fontFamily={fonts.bodyMedium}
+                      fontSize={13}
+                      color={pinSuccess ? '#0E1210' : '#FAF8F5'}
+                    >
+                      {isPinning
+                        ? 'Pinning to Home Screen…'
+                        : pinSuccess
+                        ? 'Pinned to Home Screen!'
+                        : selectedSlot === 'slot_small'
+                        ? 'Pin Small Widget (2×2) to Home'
+                        : 'Pin Wide Widget (4×2) to Home'}
+                    </Text>
+                  </XStack>
+                </TouchableOpacity>
+              )}
             </YStack>
 
             { }
@@ -780,11 +896,11 @@ const styles = StyleSheet.create({
     width: 154,
     height: 154,
     borderRadius: 22,
-    backgroundColor: '#161E1A',
-    padding: 16,
+    backgroundColor: '#0F1512',
+    padding: 13,
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#2A3830',
+    borderColor: '#2A3C31',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
@@ -793,13 +909,14 @@ const styles = StyleSheet.create({
   },
   nativeMediumTile: {
     width: '100%',
-    height: 150,
+    height: 136,
     borderRadius: 22,
-    backgroundColor: '#161E1A',
-    padding: 16,
+    backgroundColor: '#0F1512',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#2A3830',
+    borderColor: '#2A3C31',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
@@ -822,6 +939,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
+  },
+  pinButton: {
+    height: 42,
+    width: '100%',
+    borderRadius: radius.sm,
+    backgroundColor: '#1F2C24',
+    borderWidth: 1,
+    borderColor: '#2A3C31',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
   },
   widgetChoiceCard: {
     padding: 12,

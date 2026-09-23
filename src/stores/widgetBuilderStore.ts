@@ -55,10 +55,10 @@ interface WidgetBuilderState {
   setTitle: (title: string) => void;
   setSubtitle: (subtitle: string) => void;
   setSelectedColor: (color: string) => void;
-  setSelectedIcon: (icon: string) => void;
+  setSelectedIcon: (icon: WidgetIconType) => void;
   setSelectedSize: (size: "standard" | "wide") => void;
   setCardStyle: (style: "glass" | "solid" | "gradient") => void;
-  setSparklinePattern: (pattern: string) => void;
+  setSparklinePattern: (pattern: SparklineStyle) => void;
   setHasTrend: (hasTrend: boolean) => void;
   setTrendValue: (value: string) => void;
   setTrendPositive: (positive: boolean) => void;
@@ -132,10 +132,10 @@ const useWidgetBuilderStore = create<WidgetBuilderState>((set) => ({
   setTitle: (title) => set({ title }),
   setSubtitle: (subtitle) => set({ subtitle }),
   setSelectedColor: (color) => set({ selectedColor: color }),
-  setSelectedIcon: (icon) => set({ selectedIcon: icon }),
+  setSelectedIcon: (icon) => set({ selectedIcon: icon as WidgetIconType }),
   setSelectedSize: (size) => set({ selectedSize: size }),
   setCardStyle: (style) => set({ cardStyle: style }),
-  setSparklinePattern: (pattern) => set({ sparklinePattern: pattern }),
+  setSparklinePattern: (pattern) => set({ sparklinePattern: pattern as SparklineStyle }),
   setHasTrend: (hasTrend) => set({ hasTrend }),
   setTrendValue: (value) => set({ trendValue: value }),
   setTrendPositive: (positive) => set({ trendPositive: positive }),
@@ -168,10 +168,10 @@ const useWidgetBuilderStore = create<WidgetBuilderState>((set) => ({
       title: "",
       subtitle: "",
       selectedColor: "#007AFF",
-      selectedIcon: "dashboard",
+      selectedIcon: "globe",
       selectedSize: "standard",
       cardStyle: "glass",
-      sparklinePattern: "sparkline",
+      sparklinePattern: "default",
       hasTrend: false,
       trendValue: "0",
       trendPositive: true,

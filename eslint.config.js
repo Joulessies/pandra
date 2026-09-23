@@ -19,6 +19,8 @@ module.exports = defineConfig([
       'react-hooks/globals': 'off',
       'react-hooks/purity': 'off',
       'react-hooks/immutability': 'off',
+      'react-hooks/refs': 'off',
+      'import/namespace': 'off',
     },
   },
 ]);

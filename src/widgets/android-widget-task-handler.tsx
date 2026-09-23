@@ -1,9 +1,9 @@
+"use no memo";
+
 import React from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  registerWidgetTaskHandler,
-  type WidgetTaskHandlerProps,
-} from 'react-native-android-widget';
+import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import {
   PandraSmallWidget,
   PandraWideWidget,
@@ -23,21 +23,35 @@ const DEFAULT_DATA: PandraWidgetData = {
   status: 'live',
 };
 
+const STORAGE_KEY_ALL_PAYLOADS = 'pandra_native_widget_all_payloads';
+
+function payloadToWidgetData(payload: any): PandraWidgetData {
+  return {
+    title: payload.title || DEFAULT_DATA.title,
+    subtitle: payload.subtitle || DEFAULT_DATA.subtitle,
+    metric: payload.metric || DEFAULT_DATA.metric,
+    metricLabel: payload.metricLabel || DEFAULT_DATA.metricLabel,
+    badge: payload.badge || DEFAULT_DATA.badge,
+    badgeColor: payload.badgeColor || DEFAULT_DATA.badgeColor,
+    color: payload.color || DEFAULT_DATA.color,
+    status: payload.status || DEFAULT_DATA.status,
+  };
+}
+
 async function getWidgetData(slot: string): Promise<PandraWidgetData> {
   try {
     const raw = await AsyncStorage.getItem(`${STORAGE_KEY_PAYLOAD_PREFIX}${slot}`);
     if (raw) {
-      const payload = JSON.parse(raw);
-      return {
-        title: payload.title || DEFAULT_DATA.title,
-        subtitle: payload.subtitle || DEFAULT_DATA.subtitle,
-        metric: payload.metric || DEFAULT_DATA.metric,
-        metricLabel: payload.metricLabel || DEFAULT_DATA.metricLabel,
-        badge: payload.badge || DEFAULT_DATA.badge,
-        badgeColor: payload.badgeColor || DEFAULT_DATA.badgeColor,
-        color: payload.color || DEFAULT_DATA.color,
-        status: payload.status || DEFAULT_DATA.status,
-      };
+      return payloadToWidgetData(JSON.parse(raw));
+    }
+
+    const allRaw = await AsyncStorage.getItem(STORAGE_KEY_ALL_PAYLOADS);
+    if (allRaw) {
+      const allPayloads = JSON.parse(allRaw) as Array<any>;
+      if (Array.isArray(allPayloads) && allPayloads.length > 0) {
+        const slotMatch = allPayloads.find((p: any) => p.slot === slot);
+        return payloadToWidgetData(slotMatch || allPayloads[0]);
+      }
     }
   } catch (err) {
     console.warn('[AndroidWidgetHandler] Failed to read payload:', err);
@@ -69,5 +83,13 @@ const widgetTaskHandler = async (props: WidgetTaskHandlerProps) => {
 };
 
 export function registerPandraWidgetHandler() {
-  registerWidgetTaskHandler(widgetTaskHandler);
+  if (Platform.OS !== 'android') return;
+  try {
+    const { registerWidgetTaskHandler } = require('react-native-android-widget');
+    registerWidgetTaskHandler(widgetTaskHandler);
+  } catch (err: any) {
+    if (!err?.message?.includes("doesn't seem to be linked")) {
+      console.warn('[AndroidWidget] Failed to register task handler:', err);
+    }
+  }
 }

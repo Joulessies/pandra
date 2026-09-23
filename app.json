@@ -69,11 +69,13 @@
               "label": "Pandra Widget",
               "description": "AI-crafted widgets from Pandra",
               "minWidth": "110dp",
-              "minHeight": "110dp",
+              "minHeight": "90dp",
               "targetCellWidth": 2,
               "targetCellHeight": 2,
-              "resizeMode": "none",
-              "widgetFeatures": "reconfigurable",
+              "maxResizeWidth": "320dp",
+              "maxResizeHeight": "320dp",
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/pandrasmallwidget_preview.png",
               "updatePeriodMillis": 1800000
             },
             {
@@ -84,15 +86,18 @@
               "minHeight": "110dp",
               "targetCellWidth": 4,
               "targetCellHeight": 2,
-              "resizeMode": "horizontal",
-              "widgetFeatures": "reconfigurable",
+              "maxResizeWidth": "450dp",
+              "maxResizeHeight": "320dp",
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/pandrawidewidget_preview.png",
               "updatePeriodMillis": 1800000
             }
           ]
         }
       ],
       "./plugins/with-work-runtime-fix.js",
-      "expo-image"
+      "expo-image",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

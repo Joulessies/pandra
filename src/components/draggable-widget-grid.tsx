@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   PanResponder,
-  PanResponderInstance,
   Animated,
   TouchableOpacity,
   View as RNView,
@@ -133,6 +132,7 @@ export function DraggableWidgetGrid({
 
   useEffect(() => {
     widgetsRef.current = widgets;
+    layoutsRef.current = {};
   }, [widgets]);
 
   useEffect(() => {
@@ -164,15 +164,41 @@ export function DraggableWidgetGrid({
 
   const handleContainerLayout = useCallback(() => {
     if (gridContainerRef.current) {
-      gridContainerRef.current.measure((_x, _y, _width, _height, pageX, pageY) => {
+      gridContainerRef.current.measureInWindow((pageX, pageY) => {
         gridOriginRef.current = { pageX, pageY };
       });
     }
   }, []);
 
   const handleItemLayout = useCallback((index: number, event: LayoutChangeEvent) => {
-    const { x, y, width, height } = event.nativeEvent.layout;
-    layoutsRef.current[index] = { index, x, y, width, height };
+    const node = event.target as unknown as {
+      measureInWindow?: (
+        callback: (x: number, y: number, width: number, height: number) => void
+      ) => void;
+    };
+    const { width, height } = event.nativeEvent.layout;
+
+    if (typeof node?.measureInWindow === 'function') {
+      node.measureInWindow((pageX, pageY, measuredWidth, measuredHeight) => {
+        const origin = gridOriginRef.current;
+        layoutsRef.current[index] = {
+          index,
+          x: pageX - origin.pageX,
+          y: pageY - origin.pageY,
+          width: measuredWidth || width,
+          height: measuredHeight || height,
+        };
+      });
+      return;
+    }
+
+    layoutsRef.current[index] = {
+      index,
+      x: event.nativeEvent.layout.x,
+      y: event.nativeEvent.layout.y,
+      width,
+      height,
+    };
   }, []);
 
   const handleEndDrag = useCallback((currentIndex: number) => {

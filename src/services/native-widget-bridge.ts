@@ -1,6 +1,18 @@
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { CustomWidget } from '@/types/widget';
+
+export const isExpoGo = Constants.appOwnership === 'expo';
+
+export function isNativeAndroidWidgetAvailable(): boolean {
+  if (Platform.OS !== 'android') return false;
+  if (isExpoGo) return false;
+  // In a dev build (expo run:android), the native module is always available.
+  // Rather than checking for a specific TurboModule name (which varies between
+  // RN architectures), we just confirm we're not in Expo Go.
+  return true;
+}
 
 export type NativeWidgetSlot = 'slot_small' | 'slot_medium' | 'slot_accessory';
 
@@ -30,6 +42,8 @@ export interface NativeWidgetSlotsState {
 
 const STORAGE_KEY_SLOTS = 'pandra_native_widget_slots_v1';
 const STORAGE_KEY_PAYLOAD_PREFIX = 'pandra_native_widget_payload_';
+const STORAGE_KEY_ALL_PAYLOADS = 'pandra_native_widget_all_payloads';
+const STORAGE_KEY_WIDGET_BY_ID_PREFIX = 'pandra_native_widget_byid_';
 export const APP_GROUP_ID = 'group.com.joulessies.pandra';
 
 export async function getNativeWidgetSlotAssignments(): Promise<NativeWidgetSlotsState> {
@@ -78,6 +92,24 @@ export async function saveNativeWidgetSlotAssignments(
   }
 }
 
+function hasUsableMetric(widget: CustomWidget): boolean {
+  const m = widget.metric;
+  return Boolean(m && m.trim() !== '' && m !== '--');
+}
+
+function pickWidgetForSlot(
+  widgets: CustomWidget[],
+  assignedId: string | null | undefined,
+  preferWide?: boolean
+): CustomWidget | undefined {
+  const assigned = assignedId ? widgets.find((w) => w.id === assignedId) : undefined;
+  if (assigned) return assigned;
+  if (preferWide) {
+    return widgets.find((w) => w.size === 'wide') || widgets[1] || widgets[0];
+  }
+  return widgets.find((w) => w.size !== 'wide') || widgets[0];
+}
+
 export function buildNativeWidgetPayload(
   widget: CustomWidget,
   slot: NativeWidgetSlot
@@ -95,7 +127,7 @@ export function buildNativeWidgetPayload(
     iconType: widget.iconType || 'api',
     type: widget.type || 'static',
     lastUpdated: Date.now(),
-    status: 'live',
+    status: hasUsableMetric(widget) ? 'live' : 'stale',
   };
 }
 
@@ -112,20 +144,23 @@ export async function syncDeckToNativeWidgets(
       return { success: true, syncedCount: 0, payloads: [] };
     }
 
-    const smallWidget =
-      (slots.slot_small ? widgets.find((w) => w.id === slots.slot_small) : null) ||
-      widgets.find((w) => w.size !== 'wide') ||
-      widgets[0];
+    const smallWidget = pickWidgetForSlot(widgets, slots.slot_small, false);
+    const mediumWidget = pickWidgetForSlot(widgets, slots.slot_medium, true);
+    const accessoryWidget = pickWidgetForSlot(widgets, slots.slot_accessory, false);
 
-    const mediumWidget =
-      (slots.slot_medium ? widgets.find((w) => w.id === slots.slot_medium) : null) ||
-      widgets.find((w) => w.size === 'wide') ||
-      widgets[1] ||
-      widgets[0];
-
-    const accessoryWidget =
-      (slots.slot_accessory ? widgets.find((w) => w.id === slots.slot_accessory) : null) ||
-      widgets[0];
+    const nextSlots: NativeWidgetSlotsState = {
+      slot_small: smallWidget?.id ?? null,
+      slot_medium: mediumWidget?.id ?? null,
+      slot_accessory: accessoryWidget?.id ?? null,
+      lastSyncedAt: Date.now(),
+    };
+    if (
+      nextSlots.slot_small !== slots.slot_small ||
+      nextSlots.slot_medium !== slots.slot_medium ||
+      nextSlots.slot_accessory !== slots.slot_accessory
+    ) {
+      await saveNativeWidgetSlotAssignments(nextSlots);
+    }
 
     const payloads: NativeWidgetPayload[] = [];
 
@@ -139,12 +174,30 @@ export async function syncDeckToNativeWidgets(
       payloads.push(buildNativeWidgetPayload(accessoryWidget, 'slot_accessory'));
     }
 
+    // Write per-slot payloads (for backwards compatibility)
     for (const p of payloads) {
       await AsyncStorage.setItem(
         `${STORAGE_KEY_PAYLOAD_PREFIX}${p.slot}`,
         JSON.stringify(p)
       );
     }
+
+    // Write ALL widget payloads individually by widget ID, so the task
+    // handler can always find data for any widget — not just the assigned slot.
+    const allPayloads: NativeWidgetPayload[] = [];
+    for (const w of widgets) {
+      const p = buildNativeWidgetPayload(w, 'slot_small');
+      allPayloads.push(p);
+      await AsyncStorage.setItem(
+        `${STORAGE_KEY_WIDGET_BY_ID_PREFIX}${w.id}`,
+        JSON.stringify(p)
+      );
+    }
+    // Write a manifest of all payloads so the task handler can enumerate them
+    await AsyncStorage.setItem(
+      STORAGE_KEY_ALL_PAYLOADS,
+      JSON.stringify(allPayloads)
+    );
 
     if (Platform.OS === 'ios') {
       try {
@@ -205,11 +258,13 @@ export async function syncDeckToNativeWidgets(
               React.createElement(PandraWideWidget, { data: mediumPayload }),
           });
         }
-      } catch (err) {
-        console.warn(
-          '[NativeWidgetBridge] Android requestWidgetUpdate skipped:',
-          err
-        );
+      } catch (err: any) {
+        if (!err?.message?.includes("doesn't seem to be linked")) {
+          console.warn(
+            '[NativeWidgetBridge] Android requestWidgetUpdate skipped:',
+            err
+          );
+        }
       }
     }
 
@@ -237,3 +292,18 @@ export async function getCachedNativePayload(
   }
   return null;
 }
+
+export async function pinWidgetToHomeScreen(
+  widgetName: 'PandraSmallWidget' | 'PandraWideWidget' = 'PandraWideWidget'
+): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  if (!isNativeAndroidWidgetAvailable()) return false;
+  try {
+    const { requestPinWidget } = require('react-native-android-widget');
+    return await requestPinWidget({ widgetName });
+  } catch (err) {
+    console.warn('[NativeWidgetBridge] requestPinWidget failed:', err);
+    return false;
+  }
+}
+

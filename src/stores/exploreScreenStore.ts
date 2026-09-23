@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { WidgetType, WidgetIconType, SparklineStyle } from "@/types/widget";
 
 export type StudioTab = "workshop" | "blueprints" | "palette" | "backup";
 
@@ -8,7 +9,7 @@ interface ExploreScreenState {
   studioPrompt: string;
   deckWidgets: any[];
   paywallContext: string;
-  engineType: string;
+  engineType: WidgetType;
   title: string;
   subtitle: string;
   metric: string;
@@ -16,11 +17,11 @@ interface ExploreScreenState {
   badge: string;
   selectedColor: string;
   customHexInput: string;
-  selectedIcon: string;
+  selectedIcon: WidgetIconType;
   selectedSize: "standard" | "wide";
   cardStyle: "glass" | "solid" | "gradient";
   tone: "ink" | "paper";
-  sparklinePattern: string;
+  sparklinePattern: SparklineStyle;
   trendType: "positive" | "negative" | "none";
   trendValue: string;
   counterCount: number;
@@ -42,7 +43,7 @@ interface ExploreScreenState {
   setStudioPrompt: (prompt: string) => void;
   setDeckWidgets: (widgets: any[]) => void;
   setPaywallContext: (context: string) => void;
-  setEngineType: (type: string) => void;
+  setEngineType: (type: WidgetType) => void;
   setTitle: (title: string) => void;
   setSubtitle: (subtitle: string) => void;
   setMetric: (metric: string) => void;
@@ -50,11 +51,11 @@ interface ExploreScreenState {
   setBadge: (badge: string) => void;
   setSelectedColor: (color: string) => void;
   setCustomHexInput: (input: string) => void;
-  setSelectedIcon: (icon: string) => void;
+  setSelectedIcon: (icon: WidgetIconType) => void;
   setSelectedSize: (size: "standard" | "wide") => void;
   setCardStyle: (style: "glass" | "solid" | "gradient") => void;
   setTone: (tone: "ink" | "paper") => void;
-  setSparklinePattern: (pattern: string) => void;
+  setSparklinePattern: (pattern: SparklineStyle) => void;
   setTrendType: (type: "positive" | "negative" | "none") => void;
   setTrendValue: (value: string) => void;
   setCounterCount: (count: number) => void;
@@ -87,11 +88,11 @@ const useExploreScreenStore = create<ExploreScreenState>((set) => ({
   badge: "",
   selectedColor: "#007AFF",
   customHexInput: "",
-  selectedIcon: "dashboard",
+  selectedIcon: "globe",
   selectedSize: "standard",
   cardStyle: "glass",
   tone: "ink",
-  sparklinePattern: "",
+  sparklinePattern: "default",
   trendType: "none",
   trendValue: "",
   counterCount: 0,
@@ -157,11 +158,11 @@ const useExploreScreenStore = create<ExploreScreenState>((set) => ({
       badge: "",
       selectedColor: "#007AFF",
       customHexInput: "",
-      selectedIcon: "dashboard",
+      selectedIcon: "globe",
       selectedSize: "standard",
       cardStyle: "glass",
       tone: "ink",
-      sparklinePattern: "",
+      sparklinePattern: "default",
       trendType: "none",
       trendValue: "",
       counterCount: 0,

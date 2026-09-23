@@ -442,47 +442,11 @@ export async function getOnboardingRolePreference(userId?: string | null): Promi
 }
 
 export async function loadUserWidgets(userId?: string | null, clerkUser?: any): Promise<CustomWidget[]> {
-  const effectiveUserId = userId || 'default_builder';
   try {
-    
-    if (clerkUser) {
-      try {
-        const { pullDeckFromCloudDatabase } = require('./cloud-database');
-        const cloudData = await pullDeckFromCloudDatabase(effectiveUserId, clerkUser);
-        if (cloudData && Array.isArray(cloudData.widgets)) {
-          return cloudData.widgets;
-        }
-      } catch {}
-    }
-
-    const { getDbWidgets } = require('./database');
-    const sqliteWidgets = await getDbWidgets(effectiveUserId);
-    if (sqliteWidgets && sqliteWidgets.length > 0) {
-      return sqliteWidgets;
-    }
-
-    const key = getStorageKey(userId);
-    const stored = await safeGetItem(key);
-
-    if (stored !== null && stored !== undefined) {
-      try {
-        const parsed: CustomWidget[] = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      } catch {}
-    }
-
-    const isAdmin = effectiveUserId.includes('admin') || effectiveUserId.includes('joulessies') || effectiveUserId.includes('julius');
-    if (isAdmin) {
-      const { seedDbIfEmpty } = require('./database');
-      const seeded = await seedDbIfEmpty(effectiveUserId);
-      await safeSetItem(key, JSON.stringify(seeded));
-      return seeded;
-    }
-
-    await safeSetItem(key, JSON.stringify([]));
-    return [];
+    const workspaces = await loadUserWorkspaces(userId, clerkUser);
+    const activeId = await getActiveWorkspaceId(userId);
+    const fallback = await loadLocalWidgetsOnly(userId);
+    return resolveActiveWidgets(workspaces, activeId, fallback);
   } catch (err) {
     console.warn('[Storage] Fallback to empty widgets:', err);
     return [];
@@ -494,25 +458,17 @@ export async function saveUserWidgets(
   userId?: string | null,
   clerkUser?: any
 ): Promise<void> {
-  const effectiveUserId = userId || 'default_builder';
   try {
-    
-    try {
-      const { saveAllDbWidgets } = require('./database');
-      await saveAllDbWidgets(widgets, effectiveUserId);
-    } catch {
-      
+    const activeId = await getActiveWorkspaceId(userId);
+    let workspaces = await loadLocalWorkspacesOnly(userId);
+    if (workspaces.length === 0) {
+      workspaces = getDefaultStarterWorkspaces(widgets);
+    } else {
+      workspaces = workspaces.map((ws) =>
+        ws.id === activeId ? { ...ws, widgets } : ws
+      );
     }
-
-    const key = getStorageKey(userId);
-    await safeSetItem(key, JSON.stringify(widgets));
-
-    try {
-      const { pushDeckToCloudDatabase } = require('./cloud-database');
-      const { loadUserWorkspaces } = require('./widget-storage');
-      const workspaces = await loadUserWorkspaces(effectiveUserId);
-      pushDeckToCloudDatabase(effectiveUserId, { widgets, workspaces }, clerkUser).catch(() => {});
-    } catch {}
+    await persistDeckSnapshot(userId, { widgets, workspaces }, clerkUser);
   } catch (err) {
     console.error('[Storage] Failed to save widgets:', err);
   }
@@ -582,6 +538,105 @@ function getActiveWorkspaceKey(userId?: string | null): string {
   return `pandra_active_workspace_${effectiveUserId}`;
 }
 
+function getSyncMetaKey(userId?: string | null): string {
+  const effectiveUserId = userId || 'default_builder';
+  return `pandra_sync_meta_${effectiveUserId}`;
+}
+
+async function getLocalLastSyncedAt(userId?: string | null): Promise<number> {
+  try {
+    const raw = await safeGetItem(getSyncMetaKey(userId));
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw);
+    return Number(parsed?.lastSyncedAt) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function setLocalLastSyncedAt(userId: string | null | undefined, timestamp: number): Promise<void> {
+  await safeSetItem(getSyncMetaKey(userId), JSON.stringify({ lastSyncedAt: timestamp }));
+}
+
+async function loadLocalWidgetsOnly(userId?: string | null): Promise<CustomWidget[]> {
+  const effectiveUserId = userId || 'default_builder';
+
+  try {
+    const stored = await safeGetItem(getStorageKey(userId));
+    if (stored) {
+      const parsed: CustomWidget[] = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+
+  try {
+    const { getDbWidgets } = require('./database');
+    const sqliteWidgets = await getDbWidgets(effectiveUserId);
+    if (sqliteWidgets && sqliteWidgets.length > 0) {
+      return sqliteWidgets;
+    }
+  } catch {}
+
+  return [];
+}
+
+async function loadLocalWorkspacesOnly(userId?: string | null): Promise<DeckWorkspace[]> {
+  try {
+    const raw = await safeGetItem(getWorkspacesKey(userId));
+    if (raw) {
+      const parsed: DeckWorkspace[] = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('[Workspaces] Error loading local workspaces:', err);
+  }
+  return [];
+}
+
+function resolveActiveWidgets(
+  workspaces: DeckWorkspace[],
+  activeId: string,
+  fallbackWidgets: CustomWidget[]
+): CustomWidget[] {
+  const current = workspaces.find((ws) => ws.id === activeId) || workspaces[0];
+  if (current && Array.isArray(current.widgets)) {
+    return current.widgets;
+  }
+  return fallbackWidgets;
+}
+
+async function persistDeckSnapshot(
+  userId: string | null | undefined,
+  data: {
+    widgets: CustomWidget[];
+    workspaces: DeckWorkspace[];
+  },
+  clerkUser?: any
+): Promise<void> {
+  const effectiveUserId = userId || 'default_builder';
+  const timestamp = Date.now();
+
+  try {
+    const { saveAllDbWidgets } = require('./database');
+    await saveAllDbWidgets(data.widgets, effectiveUserId);
+  } catch {}
+
+  await safeSetItem(getStorageKey(userId), JSON.stringify(data.widgets));
+  await safeSetItem(getWorkspacesKey(userId), JSON.stringify(data.workspaces));
+  await setLocalLastSyncedAt(userId, timestamp);
+
+  try {
+    const { pushDeckToCloudDatabase } = require('./cloud-database');
+    pushDeckToCloudDatabase(
+      effectiveUserId,
+      { widgets: data.widgets, workspaces: data.workspaces },
+      clerkUser
+    ).catch(() => {});
+  } catch {}
+}
+
 export function getDefaultStarterWorkspaces(roleWidgets: CustomWidget[] = []): DeckWorkspace[] {
   return [
     {
@@ -596,33 +651,44 @@ export function getDefaultStarterWorkspaces(roleWidgets: CustomWidget[] = []): D
 
 export async function loadUserWorkspaces(userId?: string | null, clerkUser?: any): Promise<DeckWorkspace[]> {
   const effectiveUserId = userId || 'default_builder';
+  const localWorkspaces = await loadLocalWorkspacesOnly(userId);
+  const localWidgets = await loadLocalWidgetsOnly(userId);
+  const localSyncedAt = await getLocalLastSyncedAt(userId);
 
   if (clerkUser) {
     try {
       const { pullDeckFromCloudDatabase } = require('./cloud-database');
       const cloudData = await pullDeckFromCloudDatabase(effectiveUserId, clerkUser);
-      if (cloudData && Array.isArray(cloudData.workspaces) && cloudData.workspaces.length > 0) {
-        return cloudData.workspaces;
+      const cloudWorkspaces = Array.isArray(cloudData?.workspaces) ? cloudData.workspaces : [];
+      const cloudWidgets = Array.isArray(cloudData?.widgets) ? cloudData.widgets : [];
+      const cloudSyncedAt = Number(cloudData?.lastSyncedAt) || 0;
+      const cloudHasDeck = cloudWorkspaces.length > 0 || cloudWidgets.length > 0;
+      const localHasDeck = localWorkspaces.length > 0 || localWidgets.length > 0;
+      const cloudIsNewer = cloudSyncedAt > localSyncedAt;
+
+      if (cloudHasDeck && (!localHasDeck || (localSyncedAt > 0 && cloudIsNewer))) {
+        const mergedWorkspaces =
+          cloudWorkspaces.length > 0
+            ? cloudWorkspaces
+            : getDefaultStarterWorkspaces(cloudWidgets);
+        const activeId = await getActiveWorkspaceId(userId);
+        const mergedWidgets = resolveActiveWidgets(mergedWorkspaces, activeId, cloudWidgets);
+        await persistDeckSnapshot(
+          userId,
+          { widgets: mergedWidgets, workspaces: mergedWorkspaces },
+          undefined
+        );
+        return mergedWorkspaces;
       }
     } catch {}
   }
 
-  const wsKey = getWorkspacesKey(userId);
-  try {
-    const raw = await safeGetItem(wsKey);
-    if (raw) {
-      const parsed: DeckWorkspace[] = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.warn('[Workspaces] Error loading workspaces:', err);
+  if (localWorkspaces.length > 0) {
+    return localWorkspaces;
   }
 
-  const currentWidgets = await loadUserWidgets(userId, clerkUser);
-  const starter = getDefaultStarterWorkspaces(currentWidgets);
-  await saveUserWorkspaces(starter, userId, clerkUser);
+  const starter = getDefaultStarterWorkspaces(localWidgets);
+  await persistDeckSnapshot(userId, { widgets: localWidgets, workspaces: starter }, clerkUser);
   return starter;
 }
 
@@ -631,16 +697,14 @@ export async function saveUserWorkspaces(
   userId?: string | null,
   clerkUser?: any
 ): Promise<void> {
-  const effectiveUserId = userId || 'default_builder';
-  const wsKey = getWorkspacesKey(userId);
   try {
-    await safeSetItem(wsKey, JSON.stringify(workspaces));
-
-    try {
-      const { pushDeckToCloudDatabase } = require('./cloud-database');
-      const currentWidgets = await loadUserWidgets(effectiveUserId, clerkUser);
-      pushDeckToCloudDatabase(effectiveUserId, { widgets: currentWidgets, workspaces }, clerkUser).catch(() => {});
-    } catch {}
+    const activeId = await getActiveWorkspaceId(userId);
+    const widgets = resolveActiveWidgets(
+      workspaces,
+      activeId,
+      await loadLocalWidgetsOnly(userId)
+    );
+    await persistDeckSnapshot(userId, { widgets, workspaces }, clerkUser);
   } catch (err) {
     console.error('[Workspaces] Error saving workspaces:', err);
   }
@@ -709,13 +773,20 @@ export async function updateWorkspaceWidgets(
   userId?: string | null,
   clerkUser?: any
 ): Promise<DeckWorkspace[]> {
-  const all = await loadUserWorkspaces(userId, clerkUser);
-  const updated = all.map((ws) => (ws.id === workspaceId ? { ...ws, widgets } : ws));
-  await saveUserWorkspaces(updated, userId, clerkUser);
-
-  const activeId = await getActiveWorkspaceId(userId);
-  if (activeId === workspaceId) {
-    await saveUserWidgets(widgets, userId, clerkUser);
+  let all = await loadLocalWorkspacesOnly(userId);
+  if (all.length === 0) {
+    all = getDefaultStarterWorkspaces(widgets);
   }
+  const updated = all.map((ws) => (ws.id === workspaceId ? { ...ws, widgets } : ws));
+  const activeId = await getActiveWorkspaceId(userId);
+  const payloadWidgets =
+    activeId === workspaceId
+      ? widgets
+      : resolveActiveWidgets(updated, activeId, widgets);
+  await persistDeckSnapshot(
+    userId,
+    { widgets: payloadWidgets, workspaces: updated },
+    clerkUser
+  );
   return updated;
 }

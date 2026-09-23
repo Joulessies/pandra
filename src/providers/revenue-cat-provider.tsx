@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import Purchases, { LOG_LEVEL } from "react-native-purchases";
 import { useAppAuth } from "./auth-provider";
@@ -22,15 +22,24 @@ export const RevenueCatProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user, isLocalAdmin, isLoaded: isAuthLoaded } = useAppAuth();
-  const revenueCatStore = useRevenueCatStore();
+
+  const isConfigured = useRevenueCatStore((state) => state.isConfigured);
+  const setConfigured = useRevenueCatStore((state) => state.setConfigured);
+  const setCustomerInfo = useRevenueCatStore((state) => state.setCustomerInfo);
+  const setOfferings = useRevenueCatStore((state) => state.setOfferings);
+  const setTrialState = useRevenueCatStore((state) => state.setTrialState);
+  const setLoading = useRevenueCatStore((state) => state.setLoading);
+  const setAdmin = useRevenueCatStore((state) => state.setAdmin);
 
   const hasValidApiKey =
     Boolean(ANDROID_API_KEY) &&
     ANDROID_API_KEY !== "goog_your_android_api_key_here" &&
-    !ANDROID_API_KEY.includes("your_android_api_key");
+    !ANDROID_API_KEY.includes("your_android_api_key") &&
+    (__DEV__ || !ANDROID_API_KEY.startsWith("test_"));
 
   const isNativeAndroid = Platform.OS === "android";
 
+  // 1. Calculate and sync trial state
   useEffect(() => {
     let isMounted = true;
     if (user?.id) {
@@ -44,64 +53,79 @@ export const RevenueCatProvider: React.FC<{ children: React.ReactNode }> = ({
           1,
           Math.ceil((duration - elapsed) / (24 * 60 * 60 * 1000)),
         );
-        revenueCatStore.setTrialState(active, days);
+        setTrialState(active, days);
       });
     }
     return () => {
       isMounted = false;
     };
-  }, [user?.id, revenueCatStore]);
+  }, [user?.id, setTrialState]);
+
+  // 2. Initialize RevenueCat once
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
     let isMounted = true;
 
     async function initRevenueCat() {
       try {
         if (isNativeAndroid && hasValidApiKey) {
           if (__DEV__) {
-            await Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+            try {
+              await Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+            } catch {}
           }
 
-          Purchases.configure({
-            apiKey: ANDROID_API_KEY,
-            appUserID: user?.id || null,
-          });
+          try {
+            Purchases.configure({
+              apiKey: ANDROID_API_KEY,
+              appUserID: user?.id || null,
+            });
 
-          if (isMounted) {
-            revenueCatStore.setConfigured(true);
-          }
-
-          Purchases.addCustomerInfoUpdateListener((info) => {
             if (isMounted) {
-              revenueCatStore.setCustomerInfo(info);
+              setConfigured(true);
             }
-          });
 
-          const [info, currentOfferings] = await Promise.all([
-            Purchases.getCustomerInfo(),
-            Purchases.getOfferings().catch((err) => {
-              console.warn("[RevenueCat] Failed to fetch offerings:", err);
-              return null;
-            }),
-          ]);
+            Purchases.addCustomerInfoUpdateListener((info) => {
+              if (isMounted) {
+                setCustomerInfo(info);
+              }
+            });
 
-          if (isMounted) {
-            revenueCatStore.setCustomerInfo(info);
-            revenueCatStore.setOfferings(currentOfferings);
+            const [info, currentOfferings] = await Promise.all([
+              Purchases.getCustomerInfo().catch(() => null),
+              Purchases.getOfferings().catch((err) => {
+                console.warn("[RevenueCat] Failed to fetch offerings:", err);
+                return null;
+              }),
+            ]);
+
+            if (isMounted) {
+              if (info) setCustomerInfo(info);
+              if (currentOfferings) setOfferings(currentOfferings);
+            }
+          } catch (configErr) {
+            console.warn("[RevenueCat] Purchases.configure failed, falling back:", configErr);
+            if (isMounted) {
+              setConfigured(false);
+            }
           }
         } else {
           console.log(
             `[RevenueCat] Initialized in sandbox/fallback mode (Platform: ${Platform.OS}, configured: ${hasValidApiKey})`,
           );
           if (isMounted) {
-            revenueCatStore.setConfigured(false);
+            setConfigured(false);
           }
         }
       } catch (error) {
         console.error("[RevenueCat] Initialization error:", error);
       } finally {
         if (isMounted) {
-          revenueCatStore.setLoading(false);
+          setLoading(false);
         }
       }
     }
@@ -111,21 +135,24 @@ export const RevenueCatProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       isMounted = false;
     };
-  }, [hasValidApiKey, isNativeAndroid, user?.id, revenueCatStore]);
+  }, []);
 
+  // 3. Sync Clerk Auth state with RevenueCat user
   useEffect(() => {
-    if (!revenueCatStore.isConfigured || !isAuthLoaded) return;
+    if (!isConfigured || !isAuthLoaded) return;
+
+    let isMounted = true;
 
     async function syncAuthUser() {
       try {
         if (user?.id) {
           const { customerInfo: loggedInInfo } = await Purchases.logIn(user.id);
-          revenueCatStore.setCustomerInfo(loggedInInfo);
+          if (isMounted) setCustomerInfo(loggedInInfo);
         } else {
           const isAnon = await Purchases.isAnonymous();
           if (!isAnon) {
             const loggedOutInfo = await Purchases.logOut();
-            revenueCatStore.setCustomerInfo(loggedOutInfo);
+            if (isMounted) setCustomerInfo(loggedOutInfo);
           }
         }
       } catch (err) {
@@ -134,8 +161,13 @@ export const RevenueCatProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     syncAuthUser();
-  }, [user?.id, revenueCatStore.isConfigured, isAuthLoaded, revenueCatStore]);
 
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, isConfigured, isAuthLoaded, setCustomerInfo]);
+
+  // 4. Sync admin privileges
   useEffect(() => {
     const userEmail = user?.email?.toLowerCase() || "";
     const isAdmin =
@@ -146,8 +178,8 @@ export const RevenueCatProvider: React.FC<{ children: React.ReactNode }> = ({
       userEmail.includes("+admin@") ||
       userEmail.endsWith("@pandra.dev");
 
-    revenueCatStore.setAdmin(isAdmin);
-  }, [user, isLocalAdmin, revenueCatStore]);
+    setAdmin(isAdmin);
+  }, [user?.email, user?.isAdmin, isLocalAdmin, setAdmin]);
 
   return <>{children}</>;
 };

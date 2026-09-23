@@ -69,6 +69,13 @@ export const AppAuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [setLoaded, setLocalAdmin]);
 
   useEffect(() => {
+    const safety = setTimeout(() => {
+      setLoaded(true);
+    }, 1000);
+    return () => clearTimeout(safety);
+  }, [setLoaded]);
+
+  useEffect(() => {
     if (isClerkLoaded) {
       setClerkUser(clerkUser);
 
@@ -94,8 +101,13 @@ export const AppAuthProvider: React.FC<{ children: React.ReactNode }> = ({
           isAdmin,
         });
       } else if (!isLocalAdmin) {
-        setAuthenticated(false);
-        setUser(null);
+        if (
+          useAuthStore.getState().isAuthenticated ||
+          useAuthStore.getState().user !== null
+        ) {
+          setAuthenticated(false);
+          setUser(null);
+        }
       }
     }
   }, [

@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Purchases, {
   CustomerInfo,
   PurchasesOfferings,
@@ -35,6 +36,31 @@ export interface RevenueCatState {
 const ENTITLEMENT_ID =
   process.env.EXPO_PUBLIC_RC_ENTITLEMENT_ID || "pandra_pro";
 
+const safeStorage = {
+  getItem: async (name: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.getItem === "function") {
+        return await AsyncStorage.getItem(name);
+      }
+    } catch {}
+    return null;
+  },
+  setItem: async (name: string, value: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.setItem === "function") {
+        await AsyncStorage.setItem(name, value);
+      }
+    } catch {}
+  },
+  removeItem: async (name: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.removeItem === "function") {
+        await AsyncStorage.removeItem(name);
+      }
+    } catch {}
+  },
+};
+
 const useRevenueCatStore = create<RevenueCatState>()(
   persist(
     (set) => ({
@@ -49,16 +75,31 @@ const useRevenueCatStore = create<RevenueCatState>()(
       entitlementId: ENTITLEMENT_ID,
       simulatedPro: false,
 
-      setConfigured: (configured) => set({ isConfigured: configured }),
+      setConfigured: (configured) =>
+        set((state) =>
+          state.isConfigured === configured
+            ? state
+            : { isConfigured: configured },
+        ),
       setCustomerInfo: (info) => set({ customerInfo: info }),
       setOfferings: (offerings) => set({ offerings }),
 
       setTrialState: (isActive, daysRemaining) =>
-        set({ isTrialActive: isActive, trialDaysRemaining: daysRemaining }),
+        set((state) =>
+          state.isTrialActive === isActive &&
+          state.trialDaysRemaining === daysRemaining
+            ? state
+            : { isTrialActive: isActive, trialDaysRemaining: daysRemaining },
+        ),
 
-      setLoading: (loading) => set({ isLoading: loading }),
-      setPro: (isPro) => set({ isPro }),
-      setAdmin: (isAdmin) => set({ isAdmin }),
+      setLoading: (loading) =>
+        set((state) =>
+          state.isLoading === loading ? state : { isLoading: loading },
+        ),
+      setPro: (isPro) =>
+        set((state) => (state.isPro === isPro ? state : { isPro })),
+      setAdmin: (isAdmin) =>
+        set((state) => (state.isAdmin === isAdmin ? state : { isAdmin })),
 
       purchasePackage: async (pkg) => {
         try {
@@ -121,6 +162,7 @@ const useRevenueCatStore = create<RevenueCatState>()(
     }),
     {
       name: "revenucat-store",
+      storage: createJSONStorage(() => safeStorage),
       partialize: (state) => ({
         isPro: state.isPro,
         isTrialActive: state.isTrialActive,

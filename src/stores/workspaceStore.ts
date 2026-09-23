@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CustomWidget, DeckWorkspace } from "@/types/widget";
 
 interface WorkspaceState {
@@ -98,6 +99,7 @@ const useWorkspaceStore = create<WorkspaceState>()(
     }),
     {
       name: "workspace-store",
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         workspaces: state.workspaces,
         widgets: state.widgets,

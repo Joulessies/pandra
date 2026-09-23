@@ -56,7 +56,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
             },
         };
     }
-    
+
     else if (lower.includes('counter') || lower.includes('tracker') || lower.includes('tally') || lower.includes('intake') || lower.includes('habit')) {
         let unitName = 'Count';
         if (lower.includes('water') || lower.includes('glass')) unitName = 'Glasses';
@@ -91,7 +91,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
             },
         };
     }
-    
+
     else if (lower.includes('battery') || lower.includes('power') || lower.includes('charge') || lower.includes('charging')) {
         const batt = await fetchLiveBatteryData();
         synthesized = {
@@ -110,7 +110,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
             batteryConfig: batt,
         };
     }
-    
+
     else if (lower.includes('news') || lower.includes('hacker') || lower.includes('feed') || lower.includes('headline')) {
         const news = await fetchLiveNewsData('hackernews');
         synthesized = {
@@ -129,7 +129,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
             newsConfig: news,
         };
     }
-    
+
     else if (lower.includes('note') || lower.includes('memo') || lower.includes('sticky') || lower.includes('reminder') || lower.includes('plan')) {
         let noteText = query;
         let tag = 'memo';
@@ -156,7 +156,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
             },
         };
     }
-    
+
     else if (lower.includes('photo') || lower.includes('image') || lower.includes('picture') || lower.includes('wallpaper') || lower.includes('cyberpunk') || lower.includes('tokyo')) {
         let imgUrl = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=400&fit=crop';
         if (lower.includes('space') || lower.includes('galaxy')) {
@@ -186,7 +186,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
             },
         };
     }
-    
+
     else if (lower.includes('github') || lower.includes('repo') || lower.includes('stars')) {
         const repoMatch = query.match(/([a-zA-Z0-9_\-\.]+)\/([a-zA-Z0-9_\-\.]+)/);
         const repoPath = repoMatch ? `${repoMatch[1]}/${repoMatch[2]}` : 'expo/expo';
@@ -223,7 +223,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
             },
         };
     }
-    
+
     else if (lower.includes('btc') || lower.includes('bitcoin') || lower.includes('crypto') || lower.includes('sol') || lower.includes('solana') || lower.includes('eth')) {
         const isSol = lower.includes('sol');
         const isEth = lower.includes('eth');
@@ -233,8 +233,8 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
         const endpoint = isSol
             ? 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd'
             : isEth
-            ? 'https://api.coinbase.com/v2/prices/ETH-USD/spot'
-            : 'https://api.coinbase.com/v2/prices/BTC-USD/spot';
+                ? 'https://api.coinbase.com/v2/prices/ETH-USD/spot'
+                : 'https://api.coinbase.com/v2/prices/BTC-USD/spot';
         const jsonPath = isSol ? 'solana.usd' : isEth ? 'ethereum.usd' : 'data.amount';
 
         synthesized = {
@@ -260,7 +260,7 @@ export async function synthesizeWidgetFromPrompt(promptText: string): Promise<Cu
             },
         };
     }
-    
+
     else {
         synthesized = {
             id: `ai_stat_${Date.now()}`,

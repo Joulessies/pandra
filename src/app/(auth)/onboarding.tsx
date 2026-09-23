@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
+    type SharedValue,
     withSpring,
     withTiming,
     withRepeat,
@@ -179,6 +180,110 @@ const PERSONA_EMOJI: Record<string, string> = {
     ambient: '🌤️',
     developer: '💻',
 };
+
+function RoleCard({
+    role,
+    index,
+    isSelected,
+    scaleValue,
+    onSelect,
+}: {
+    role: (typeof ONBOARDING_ROLES)[keyof typeof ONBOARDING_ROLES];
+    index: number;
+    isSelected: boolean;
+    scaleValue?: SharedValue<number>;
+    onSelect: (roleId: string) => void;
+}) {
+    const emoji = PERSONA_EMOJI[role.id] ?? '✦';
+    const cardAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scaleValue ? scaleValue.value : 1 }],
+    }));
+
+    return (
+        <Animated.View
+            entering={FadeInDown.delay(220 + index * 70).springify()}
+            style={cardAnimStyle}
+        >
+            <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => onSelect(role.id)}
+                style={{
+                    padding: 10,
+                    borderRadius: radius.md,
+                    backgroundColor: isSelected
+                        ? pandraColors.surfaceElevated
+                        : pandraColors.surface,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? role.color : pandraColors.border,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    ...(isSelected && {
+                        shadowColor: role.color,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 8,
+                        elevation: 4,
+                    }),
+                }}
+            >
+                <XStack alignItems="center" gap={10} flex={1}>
+                    <View
+                        width={36}
+                        height={36}
+                        borderRadius={radius.sm}
+                        backgroundColor={role.color + '22'}
+                        borderWidth={1}
+                        borderColor={isSelected ? role.color : role.color + '55'}
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <PersonaIcon roleId={role.id} color={role.color} />
+                    </View>
+
+                    <YStack flex={1}>
+                        <XStack alignItems="center" gap={6}>
+                            <Text fontFamily={fonts.bodySemibold} fontSize={13.5} color={pandraColors.text}>
+                                {emoji} {role.title}
+                            </Text>
+                            <View
+                                paddingHorizontal={5.5}
+                                paddingVertical={1.5}
+                                borderRadius={radius.xs}
+                                backgroundColor={role.color + '18'}
+                            >
+                                <Text fontFamily={fonts.mono} fontSize={9} fontWeight="700" color={role.color}>
+                                    {role.badge}
+                                </Text>
+                            </View>
+                        </XStack>
+                        <Text
+                            fontFamily={fonts.body}
+                            fontSize={11}
+                            color={pandraColors.textSecondary}
+                            numberOfLines={1}
+                        >
+                            {role.subtitle}
+                        </Text>
+                    </YStack>
+                </XStack>
+
+                <View
+                    width={22}
+                    height={22}
+                    borderRadius={11}
+                    borderWidth={1.5}
+                    borderColor={isSelected ? role.color : pandraColors.borderHighlight}
+                    backgroundColor={isSelected ? role.color : 'transparent'}
+                    alignItems="center"
+                    justifyContent="center"
+                >
+                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                </View>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+}
 
 export default function OnboardingScreen() {
     const insets = useSafeAreaInsets();
@@ -485,7 +590,7 @@ export default function OnboardingScreen() {
                                     >
                                         <Sparkles size={11} color={pandraColors.accentCyan} />
                                         <Text fontFamily={fonts.mono} fontSize={10.5} fontWeight="600" color={pandraColors.accentCyan}>
-                                            ✨ AI-Powered Widget Engine
+                                            AI-Powered Widget Engine
                                         </Text>
                                     </View>
                                 </Animated.View>
@@ -681,11 +786,12 @@ export default function OnboardingScreen() {
                                 </Animated.View>
                             </YStack>
 
-                            { }
+                            {/* Preset chips */}
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={{ gap: 8, paddingHorizontal: 2, marginBottom: 12 }}
+                                style={{ flexGrow: 0, height: 38, marginBottom: 12 }}
+                                contentContainerStyle={{ gap: 8, paddingHorizontal: 2, alignItems: 'center' }}
                             >
                                 {PROMPT_PRESETS.map((preset) => {
                                     const isSelected = selectedPresetId === preset.id;
@@ -695,6 +801,7 @@ export default function OnboardingScreen() {
                                             activeOpacity={0.8}
                                             onPress={() => handleSelectPreset(preset)}
                                             style={{
+                                                alignSelf: 'center',
                                                 paddingHorizontal: 12,
                                                 paddingVertical: 6,
                                                 borderRadius: radius.full,
@@ -986,105 +1093,16 @@ export default function OnboardingScreen() {
 
                             { }
                             <YStack gap={8} marginBottom={12}>
-                                {Object.values(ONBOARDING_ROLES).map((role, index) => {
-                                    const isSelected = selectedRole === role.id;
-                                    const emoji = PERSONA_EMOJI[role.id] ?? '✦';
-                                    const sv = personaScales[role.id];
-
-                                    const cardAnimStyle = useAnimatedStyle(() => ({
-                                        transform: [{ scale: sv ? sv.value : 1 }],
-                                    }));
-
-                                    return (
-                                        <Animated.View
-                                            key={role.id}
-                                            entering={FadeInDown.delay(220 + index * 70).springify()}
-                                            style={cardAnimStyle}
-                                        >
-                                            <TouchableOpacity
-                                                activeOpacity={0.85}
-                                                onPress={() => handleSelectRole(role.id)}
-                                                style={{
-                                                    padding: 10,
-                                                    borderRadius: radius.md,
-                                                    backgroundColor: isSelected
-                                                        ? pandraColors.surfaceElevated
-                                                        : pandraColors.surface,
-                                                    borderWidth: 1.5,
-                                                    borderColor: isSelected ? role.color : pandraColors.border,
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    
-                                                    ...(isSelected && {
-                                                        shadowColor: role.color,
-                                                        shadowOffset: { width: 0, height: 0 },
-                                                        shadowOpacity: 0.3,
-                                                        shadowRadius: 8,
-                                                        elevation: 4,
-                                                    }),
-                                                }}
-                                            >
-                                                <XStack alignItems="center" gap={10} flex={1}>
-                                                    { }
-                                                    <View
-                                                        width={36}
-                                                        height={36}
-                                                        borderRadius={radius.sm}
-                                                        backgroundColor={role.color + '22'}
-                                                        borderWidth={1}
-                                                        borderColor={isSelected ? role.color : role.color + '55'}
-                                                        alignItems="center"
-                                                        justifyContent="center"
-                                                    >
-                                                        <PersonaIcon roleId={role.id} color={role.color} />
-                                                    </View>
-
-                                                    { }
-                                                    <YStack flex={1}>
-                                                        <XStack alignItems="center" gap={6}>
-                                                            <Text fontFamily={fonts.bodySemibold} fontSize={13.5} color={pandraColors.text}>
-                                                                {emoji} {role.title}
-                                                            </Text>
-                                                            <View
-                                                                paddingHorizontal={5.5}
-                                                                paddingVertical={1.5}
-                                                                borderRadius={radius.xs}
-                                                                backgroundColor={role.color + '18'}
-                                                            >
-                                                                <Text fontFamily={fonts.mono} fontSize={9} fontWeight="700" color={role.color}>
-                                                                    {role.badge}
-                                                                </Text>
-                                                            </View>
-                                                        </XStack>
-                                                        <Text
-                                                            fontFamily={fonts.body}
-                                                            fontSize={11}
-                                                            color={pandraColors.textSecondary}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {role.subtitle}
-                                                        </Text>
-                                                    </YStack>
-                                                </XStack>
-
-                                                { }
-                                                <View
-                                                    width={22}
-                                                    height={22}
-                                                    borderRadius={11}
-                                                    borderWidth={1.5}
-                                                    borderColor={isSelected ? role.color : pandraColors.borderHighlight}
-                                                    backgroundColor={isSelected ? role.color : 'transparent'}
-                                                    alignItems="center"
-                                                    justifyContent="center"
-                                                >
-                                                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
-                                                </View>
-                                            </TouchableOpacity>
-                                        </Animated.View>
-                                    );
-                                })}
+                                {Object.values(ONBOARDING_ROLES).map((role, index) => (
+                                    <RoleCard
+                                        key={role.id}
+                                        role={role}
+                                        index={index}
+                                        isSelected={selectedRole === role.id}
+                                        scaleValue={personaScales[role.id]}
+                                        onSelect={handleSelectRole}
+                                    />
+                                ))}
                             </YStack>
 
                             { }

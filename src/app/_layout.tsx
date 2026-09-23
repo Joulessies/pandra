@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Platform, LogBox } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
-import { ClerkProvider, ClerkLoaded } from '@clerk/expo';
+import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@/services/token-cache';
 import { TamaguiProvider, Theme } from 'tamagui';
 import { tamaguiConfig } from '@/tamagui.config';
@@ -31,6 +31,8 @@ LogBox.ignoreLogs([
   '[RevenueCat] Using a Test Store API key',
   'Called logOut but the current user is anonymous',
   'Development instances have strict usage limits',
+  "The package 'react-native-android-widget' doesn't seem to be linked",
+  '[NativeWidgetBridge] Android requestWidgetUpdate skipped',
 ]);
 
 if (Platform.OS === 'android') {
@@ -48,6 +50,7 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || CLERK_DE
 
 interface ErrorBoundaryState {
   hasError: boolean;
+  errorMessage?: string;
 }
 
 class SafeAppErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
@@ -56,8 +59,8 @@ class SafeAppErrorBoundary extends React.Component<{ children: React.ReactNode }
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, errorMessage: error?.message || String(error) };
   }
 
   componentDidCatch(error: any, errorInfo: any) {
@@ -67,8 +70,15 @@ class SafeAppErrorBoundary extends React.Component<{ children: React.ReactNode }
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, backgroundColor: pandraColors.bg, alignItems: 'center', justifyContent: 'center' }}>
-          <AnimatedSplashOverlay />
+        <View style={{ flex: 1, backgroundColor: pandraColors.bg, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: pandraColors.bg },
+            }}
+          >
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+          </Stack>
         </View>
       );
     }
@@ -78,20 +88,28 @@ class SafeAppErrorBoundary extends React.Component<{ children: React.ReactNode }
 
 function InitialLayout() {
   const { isLoaded, isAuthenticated } = useAppAuth();
+  const [authTimedOut, setAuthTimedOut] = React.useState(false);
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoaded) return;
+    const timer = setTimeout(() => {
+      setAuthTimedOut(true);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded && !authTimedOut) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
     if (isAuthenticated && inAuthGroup) {
       router.replace('/');
     }
-  }, [isAuthenticated, isLoaded, segments, router]);
+  }, [isAuthenticated, isLoaded, authTimedOut, segments, router]);
 
-  if (!isLoaded) {
+  if (!isLoaded && !authTimedOut) {
     return (
       <View style={{ flex: 1, backgroundColor: pandraColors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <AnimatedSplashOverlay />
@@ -128,17 +146,23 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
   });
 
+  const [fontTimedOut, setFontTimedOut] = React.useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFontTimedOut(true);
+      SplashScreen.hideAsync().catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     if (loaded || error) {
       SplashScreen.hideAsync().catch(() => {});
     }
-    const safetyTimer = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    }, 1500);
-    return () => clearTimeout(safetyTimer);
   }, [loaded, error]);
 
-  if (!loaded && !error) {
+  if (!loaded && !error && !fontTimedOut) {
     return (
       <View style={{ flex: 1, backgroundColor: pandraColors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <AnimatedSplashOverlay />
